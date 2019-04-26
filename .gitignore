@@ -1,0 +1,6 @@
+build/
+dist/
+node_modules/
+src/rise-data-weather-config.js
+demo/build
+demo/node_modules
