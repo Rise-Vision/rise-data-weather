@@ -1,4 +1,4 @@
-# weather Data Web Component Demo
+# Weather Data Web Component Demo
 
 ## Dependencies
 
@@ -44,7 +44,7 @@ Then create a schedule that targets the URL of the published file, for example:
 
 Note that this is an HTTP URL, as ChromeOS currently requires that.
 
-Then configure the local environment as described in the [weather Templates First - Local Development](https://docs.google.com/document/d/1xbtDo9GnhbH0lGeQmgTdSb-U5ed0vTjufhxZBV-1C4A/edit) document.
+Then configure the local environment as described in the [Weather Templates First - Local Development](https://docs.google.com/document/d/1xbtDo9GnhbH0lGeQmgTdSb-U5ed0vTjufhxZBV-1C4A/edit) document.
 It's not necessary to point the schedule to a local URL as it's described
 there, with the above URL for the schedule is enough.
 
