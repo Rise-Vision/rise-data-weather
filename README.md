@@ -58,9 +58,7 @@ The below illustrates simple usage of the component and listening to the `rise-c
 
 When listening for the "data-update" event, the `event.detail` object returned is an object of the following format:
 
-![rise-weather data](https://content.screencast.com/users/stulees/folders/Snagit/media/d7bd19a3-c6ac-4bbc-8072-42e2cf3393d3/2019-03-13_13-07-58.png)
-
-_data_ is an object with _cols_ and _rows_ properties, where _cols_ is an array that contains additional information about the requested fields, and _rows_ is an array that contains the actual data.
+** TODO **
 
 ### Labels
 

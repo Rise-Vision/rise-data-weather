@@ -22,6 +22,15 @@ class RiseDataWeather extends PolymerElement {
   static get properties() {
     return {
       /**
+       * Unit of temperature that should be used.
+       * Valid values are: F, C.
+       */
+      temperatureUnit: {
+        type: String,
+        value: "F"
+      },
+
+      /**
        * Interval for which data should be retrieved.
        * Valid values are: 48h, 7d, 15d.
        */
@@ -29,6 +38,15 @@ class RiseDataWeather extends PolymerElement {
         type: String,
         value: "7d"
       },
+
+      /**
+       * The address of the display running this instance of the component.
+       */
+      displayAddress: {
+        type: Object,
+        readOnly: true,
+        value: {}
+      }
 
       /**
        * The id of the display running this instance of the component.
