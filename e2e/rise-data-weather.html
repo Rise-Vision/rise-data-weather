@@ -1,0 +1,90 @@
+<!doctype html>
+
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <script src="https://widgets.risevision.com/scripts/primus-local-messaging.js"></script>
+
+    <script src="../node_modules/@webcomponents/webcomponentsjs/webcomponents-loader.js"></script>
+    <script src="../node_modules/@webcomponents/webcomponentsjs/custom-elements-es5-adapter.js"></script>
+    <script type="module">
+      // this and the following block are needed at build time to force the creation of the shared bundle script
+      import { PolymerElement, html } from '@polymer/polymer/polymer-element.js';
+    </script>
+    <script type="module">
+      import { PolymerElement, html } from '@polymer/polymer/polymer-element.js';
+    </script>
+    <script src="https://widgets.risevision.com/__STAGE__/common/config-test.min.js"></script>
+    <script src="https://widgets.risevision.com/__STAGE__/common/common-template.min.js"></script>
+    <script src="https://widgets.risevision.com/staging/components/rise-data-weather/__VERSION__/rise-data-weather.js"></script>
+    <script>
+      if (document.domain.indexOf("localhost") === -1) {
+        try {
+          document.domain = "risevision.com";
+        } catch (err) {
+          // can't set document.domain, risevision.com not an accepted suffix of current document domain
+          console.log("document.domain can't be set", err);
+        }
+      }
+    </script>
+    <style>
+       h1 { font-size: 72px; }
+    </style>
+  </head>
+  <body>
+    <rise-data-weather
+      id="rise-data-weather-01"
+      label="Weather Forecast"
+
+      >
+    </rise-data-weather>
+
+    <script>
+      function configureComponents() {
+        const start = new CustomEvent( "start" ),
+          weather01 = document.querySelector('#rise-data-weather-01');
+
+        weather01.addEventListener( "data-update", ( evt ) => {
+          console.log( "data update", evt.detail );
+          document.querySelector('#data').innerHTML = "DATA";
+        } );
+
+        weather01.addEventListener( "data-error", ( evt ) => {
+          console.log( "data error", evt.detail );
+        } );
+
+        weather01.addEventListener( "request-error", ( evt ) => {
+          console.log( "request error", evt.detail );
+        } );
+
+        RisePlayerConfiguration.Helpers.sendStartEvent( weather01 );
+      }
+
+      window.addEventListener( "rise-components-ready", configureComponents );
+
+      // Demonstrating how to handle no connection to local messaging via listening for event
+      // Note: the connection can also be checked via RisePlayerConfiguration.LocalMessaging.isConnected()
+      window.addEventListener( "rise-local-messaging-connection", event => {
+        if ( !event.detail.isConnected ) {
+          console.log( "no connection to local messaging");
+        }
+      } );
+    </script>
+    <script>
+      // electron / websocket or chromeos / window
+      RisePlayerConfiguration.configure({
+        displayId: "TODO",
+        companyId: "7fa5ee92-7deb-450b-a8d5-e5ed648c575f",
+        playerType: "__STAGE__",
+        playerVersion: "TEST_VERSION",
+        os: "TEST_OS"
+      }, {
+        player: "__PLAYER__",
+        connectionType: "__CONNECTION__",
+        detail: { serverUrl: "http://localhost:8080" }
+      });
+    </script>
+  </body>
+</html>
