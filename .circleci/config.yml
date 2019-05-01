@@ -1,14 +1,9 @@
 version: 2.1
 
 jobs:
-  preconditions:
+  install:
     docker: &BUILDIMAGE
       - image: jenkinsrise/cci-v2-components:0.0.4
-    steps:
-      - run: echo "Image configured"
-
-  install:
-    docker: *BUILDIMAGE
     steps:
       - checkout
       - restore_cache:
@@ -201,13 +196,8 @@ jobs:
 workflows:
   workflow1:
     jobs:
-      - preconditions
-      - install:
-          requires:
-            - preconditions
+      - install
       - gcloud-setup:
-          requires:
-            - preconditions
           filters:
             branches:
               only:
@@ -215,8 +205,6 @@ workflows:
                 - master
                 - build/stable
       - generate-version:
-          requires:
-            - preconditions
           filters:
             branches:
               only:
