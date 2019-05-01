@@ -1,4 +1,4 @@
-# Weather Data Web Component [![CircleCI](https://circleci.com/gh/Rise-Vision/rise-data-weather/tree/master.svg?style=svg)](https://circleci.com/gh/Rise-Vision/rise-data-weather/tree/master)
+# Weather Data Web Component [![CircleCI](https://circleci.com/gh/Rise-Vision/rise-data-weather/tree/master.svg?style=svg)](https://circleci.com/gh/Rise-Vision/workflows/rise-data-weather/tree/master)
 
 ## Introduction
 
