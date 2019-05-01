@@ -1,0 +1,58 @@
+<!doctype html>
+
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <script src="../../node_modules/@webcomponents/webcomponentsjs/webcomponents-loader.js"></script>
+  <script src="../../node_modules/wct-browser-legacy/browser.js"></script>
+  <script type="text/javascript">
+    RisePlayerConfiguration = {
+      isConfigured: () => false,
+      getDisplayId: () => "ABC123",
+      Logger: {
+        info: () => {},
+        warning: () => {},
+        error: () => {}
+      }
+    };
+  </script>
+  <script src="../../src/rise-data-weather-config.js" type="module"></script>
+  <script src="../../src/rise-data-weather.js" type="module"></script>
+</head>
+<body>
+<test-fixture id="test-block">
+  <template>
+    <rise-data-weather></rise-data-weather>
+  </template>
+</test-fixture>
+
+<script>
+  suite("rise-data-weather-not-configured", () => {
+
+    let element;
+
+    setup(() => {
+      element = fixture("test-block");
+    });
+
+    suite( "_init", () => {
+
+      test( "should not set display id after rise-components-ready is not called", () => {
+        assert.equal( element.displayId, "preview" );
+      } );
+
+      test( "should set display id after rise-components-ready is called", () => {
+        window.dispatchEvent( new CustomEvent( "rise-components-ready" ));
+
+        assert.equal( element.displayId, "ABC123" );
+      } );
+
+    } );
+
+  });
+</script>
+
+</body>
+</html>
