@@ -249,7 +249,7 @@ class RiseDataWeather extends PolymerElement {
     this._refresh();
   }
 
-  _checkWeatherErrors( data ) {
+  _checkWeatherErrors() {
     // TODO: Implement weather error catching
   }
 
