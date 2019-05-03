@@ -43,9 +43,9 @@ class RiseDataWeather extends PolymerElement {
         type: Object,
         readOnly: true,
         value: {
-          city: 'Toronto',
-          province: 'ON',
-          country: 'CA'
+          city: "Toronto",
+          province: "ON",
+          country: "CA"
         }
       },
 
@@ -54,7 +54,7 @@ class RiseDataWeather extends PolymerElement {
       */
       fullAddress: {
         type: String,
-        computed: '_computeFullAddress(displayAddress)'
+        computed: "_computeFullAddress(displayAddress)"
       },
 
       /**
@@ -94,8 +94,8 @@ class RiseDataWeather extends PolymerElement {
     return "request-error";
   }
 
-  _computeFullAddress(displayAddress) {
-    return [displayAddress.city, displayAddress.province, displayAddress.country].join(",")
+  _computeFullAddress( displayAddress ) {
+    return [ displayAddress.city, displayAddress.province, displayAddress.country ].join( "," )
   }
 
   constructor() {
@@ -258,7 +258,7 @@ class RiseDataWeather extends PolymerElement {
     // TODO: Implement weather error catching
   }
 
-  _getData( symbols, props, fields ) {
+  _getData() {
     const weather = this.$.weather;
 
     let url = weatherServerConfig.providerURL;
@@ -267,7 +267,7 @@ class RiseDataWeather extends PolymerElement {
       url += "&metric=true";
     }
 
-    url += "&name=" + encodeURIComponent(this.fullAddress);
+    url += "&name=" + encodeURIComponent( this.fullAddress );
     weather.url = url;
     weather.generateRequest();
   }
@@ -287,22 +287,23 @@ class RiseDataWeather extends PolymerElement {
   }
 
   _handleStart() {
-    this._getData();   
+    this._getData();
   }
 
   _handleResponse( event, request ) {
-    this._log("info","response received", {response: request.response});
+    this._log( "info", "response received", { response: request.response });
     let element = request.response.evaluate(
-        '//observation[1]', 
-        request.response, 
-        null, 
-        XPathResult.FIRST_ORDERED_NODE_TYPE, 
-        null).singleNodeValue;   
-    this._sendWeatherEvent( RiseDataWeather.EVENT_DATA_UPDATE, element.getAttribute('temperature'));
+      "//observation[1]",
+      request.response,
+      null,
+      XPathResult.FIRST_ORDERED_NODE_TYPE,
+      null ).singleNodeValue;
+
+    this._sendWeatherEvent( RiseDataWeather.EVENT_DATA_UPDATE, element.getAttribute( "temperature" ));
   }
 
   _handleResponseError( event, request ) {
-    this._log("error","error response", {response: request.response});
+    this._log( "error", "error response", { response: request.response });
     this._sendWeatherEvent( RiseDataWeather.EVENT_REQUEST_ERROR );
   }
 
