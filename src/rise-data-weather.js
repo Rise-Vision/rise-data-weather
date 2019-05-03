@@ -1,21 +1,27 @@
 /* eslint-disable no-console */
 
 import { PolymerElement, html } from "@polymer/polymer";
+
 import { timeOut } from "@polymer/polymer/lib/utils/async.js";
 import { Debouncer } from "@polymer/polymer/lib/utils/debounce.js";
 import { weatherServerConfig } from "./rise-data-weather-config.js";
 import { version } from "./rise-data-weather-version.js";
-import "@polymer/iron-jsonp-library/iron-jsonp-library.js";
+import "@polymer/iron-ajax/iron-ajax.js";
 
 class RiseDataWeather extends PolymerElement {
 
   static get template() {
+    //handle-as=xml doesn't work (https://github.com/PolymerElements/iron-ajax/issues/53)
     return html`
-      <iron-jsonp-library
-            id="weather"
-            notify-event="weather-data"
-            library-error-message="{{weatherErrorMessage}}">
-        </iron-jsonp-library>
+      <iron-ajax
+          id="weather"
+          url=""
+          headers='{"X-Requested-With": "XMLHttpRequest"}'
+          handle-as="document"
+          on-response="_handleResponse"
+          on-error="_handleResponseError"
+          verbose="true">
+      </iron-ajax>
     `;
   }
 
@@ -25,18 +31,9 @@ class RiseDataWeather extends PolymerElement {
        * Unit of temperature that should be used.
        * Valid values are: F, C.
        */
-      temperatureUnit: {
+      scale: {
         type: String,
         value: "F"
-      },
-
-      /**
-       * Interval for which data should be retrieved.
-       * Valid values are: 48h, 7d, 15d.
-       */
-      duration: {
-        type: String,
-        value: "7d"
       },
 
       /**
@@ -45,7 +42,19 @@ class RiseDataWeather extends PolymerElement {
       displayAddress: {
         type: Object,
         readOnly: true,
-        value: {}
+        value: {
+          city: 'Toronto',
+          province: 'ON',
+          country: 'CA'
+        }
+      },
+
+      /**
+      * The full display address in a single string.
+      */
+      fullAddress: {
+        type: String,
+        computed: '_computeFullAddress(displayAddress)'
       },
 
       /**
@@ -85,6 +94,10 @@ class RiseDataWeather extends PolymerElement {
     return "request-error";
   }
 
+  _computeFullAddress(displayAddress) {
+    return [displayAddress.city, displayAddress.province, displayAddress.country].join(",")
+  }
+
   constructor() {
     super();
 
@@ -122,13 +135,10 @@ class RiseDataWeather extends PolymerElement {
     super.connectedCallback();
 
     this._handleData = this._handleData.bind( this );
-    this.$.weather.addEventListener( "weather-data", this._handleData );
   }
 
   disconnectedCallback() {
     super.disconnectedCallback();
-
-    this.$.weather.removeEventListener( "weather-data", this._handleData );
   }
 
   _getComponentData() {
@@ -181,11 +191,6 @@ class RiseDataWeather extends PolymerElement {
     });
 
     this.dispatchEvent( event );
-  }
-
-  _isValidDuration( duration ) {
-    // Choose which duration to query the Weather server with.
-    return [ "48h", "7d", "15d" ].indexOf( duration ) !== -1;
   }
 
   _handleError() {
@@ -253,62 +258,18 @@ class RiseDataWeather extends PolymerElement {
     // TODO: Implement weather error catching
   }
 
-  _getQueryString( fields ) {
-    if ( fields.length === 0 ) {
-      return "";
-    }
-
-    return `select ${ fields.join( "," ) }`;
-  }
-
-  _getParams( fields, symbols, callback ) {
-
-    return Object.assign({},
-      {
-        id: this.displayId,
-        code: symbols,
-        tqx: `out:json;responseHandler:${callback}`
-      },
-      fields.length > 0 ? { tq: this._getQueryString( fields ) } : null );
-  }
-
-  _getKey() {
-    return `risedataweather_${this.type}_${this.displayId}_${this.symbols}_${this.duration}`;
-  }
-
-  _getCallbackValue( key ) {
-    return ( btoa(( this.id ? this.id : "" ) + key )).substr( 0, 10 ) + ( Math.random().toString()).substring( 2 );
-  }
-
-  _getSerializedUrl( url, params ) {
-    const queryParams = Object.keys( params ).reduce(( arr, key ) => {
-      return arr.push( key + "=" + encodeURIComponent( params[ key ])) && arr;
-    }, []).join( "&" );
-
-    return `${url}?${queryParams}`;
-  }
-
   _getData( symbols, props, fields ) {
-    if ( !this._isValidDuration( props.duration )) {
-      return;
+    const weather = this.$.weather;
+
+    let url = weatherServerConfig.providerURL;
+
+    if ( this.scale == "C" ) {
+      url += "&metric=true";
     }
 
-    // set callback with the same value it was set on the responseHandler of the tqx parameter
-    const weather = this.$.weather,
-      callbackValue = this._getCallbackValue( this._getKey());
-
-    let params = this._getParams( fields, symbols, callbackValue ),
-      url;
-
-    if ( props.type === "realtime" ) {
-      url = this._getSerializedUrl( weatherServerConfig.realTimeURL, params );
-    } else {
-      params.kind = props.duration;
-      url = this._getSerializedUrl( weatherServerConfig.historicalURL, params );
-    }
-
-    weather.callbackName = callbackValue;
-    weather.libraryUrl = url;
+    url += "&name=" + encodeURIComponent(this.fullAddress);
+    weather.url = url;
+    weather.generateRequest();
   }
 
   _refresh() {
@@ -326,18 +287,23 @@ class RiseDataWeather extends PolymerElement {
   }
 
   _handleStart() {
-    if ( this._initialStart ) {
-      this._initialStart = false;
+    this._getData();   
+  }
 
-      // configure and execute request
-      this._getData( this.symbols,
-        {
-          type: this.type,
-          duration: this.duration,
-        },
-        this.instrumentFields
-      );
-    }
+  _handleResponse( event, request ) {
+    this._log("info","response received", {response: request.response});
+    let element = request.response.evaluate(
+        '//observation[1]', 
+        request.response, 
+        null, 
+        XPathResult.FIRST_ORDERED_NODE_TYPE, 
+        null).singleNodeValue;   
+    this._sendWeatherEvent( RiseDataWeather.EVENT_DATA_UPDATE, element.getAttribute('temperature'));
+  }
+
+  _handleResponseError( event, request ) {
+    this._log("error","error response", {response: request.response});
+    this._sendWeatherEvent( RiseDataWeather.EVENT_REQUEST_ERROR );
   }
 
 }
