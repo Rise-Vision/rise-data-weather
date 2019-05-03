@@ -1,0 +1,81 @@
+<!doctype html>
+
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <script src="../../node_modules/@webcomponents/webcomponentsjs/webcomponents-loader.js" async></script>
+  <script type="module">
+    // Basic noop script that helps forcing shared bundle file creation.
+    import { PolymerElement } from '@polymer/polymer/polymer-element.js';
+  </script>
+  <!-- <script src="https://widgets.risevision.com/beta/common/config-test.min.js"></script> -->
+  <!-- <script src="https://widgets.risevision.com/beta/common/common-template.min.js"></script> -->
+  <script src="../../src/rise-data-weather.js" type="module"></script>
+</head>
+<body>
+
+  <rise-data-weather
+    id="rise-data-weather-01"
+    label="Weather Forecast">
+  </rise-data-weather>
+
+<ul id="log">
+</ul>
+
+<script>
+  window.RisePlayerConfiguration = {
+    isConfigured: function(){return false},
+    getDisplayId: function(){return 'DisplayID'},
+    Logger: {
+      info: _logFromLogger,
+      warning: _logFromLogger,
+      error: _logFromLogger
+    }
+  }
+  
+  function log(text) {
+    console.log(text);
+    var ul = document.getElementById("log");
+    var li = document.createElement("li");
+    li.appendChild(document.createTextNode(text));
+    ul.appendChild(li);
+  }
+
+  function _logFromLogger(componentData, event, details, additionalFields) {
+    log(event + " " + JSON.stringify(details));
+  }
+
+  function configureComponents() {
+    weather01 = document.querySelector('#rise-data-weather-01');
+
+    weather01.addEventListener( "configured", ( evt ) => {
+      log( "configured " + JSON.stringify(evt.detail) );
+      weather01.dispatchEvent( new Event('start') );
+    } );
+
+    weather01.addEventListener( "data-update", ( evt ) => {
+      log( "data update " + JSON.stringify(evt.detail) );
+    } );
+
+    weather01.addEventListener( "data-error", ( evt ) => {
+      log( "data error " + evt.detail );
+    } );
+
+    weather01.addEventListener( "request-error", ( evt ) => {
+      log( "request error " + evt.detail );
+    } );
+
+  }
+  configureComponents();
+
+  setTimeout(function() {
+    window.dispatchEvent( new Event('rise-components-ready') );
+  }, 500);
+
+  log('started');
+</script>  
+
+</body>
+</html>
