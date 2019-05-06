@@ -168,7 +168,7 @@ class RiseDataWeather extends PolymerElement {
         this._handleResponse( res.clone());
         return cache.put( res.url, res );
       })
-    });
+    }).catch( this._handleFetchError.bind( this ));
   }
 
   _handleStart() {
@@ -209,8 +209,8 @@ class RiseDataWeather extends PolymerElement {
     });
   }
 
-  _handleResponseError( event, request ) {
-    this._log( "error", "error response", { response: request.response });
+  _handleFetchError() {
+    this._log( "error", "request error" );
     this._sendWeatherEvent( RiseDataWeather.EVENT_REQUEST_ERROR );
   }
 
