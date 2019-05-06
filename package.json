@@ -6,7 +6,8 @@
     "prebuild": "eslint . && ./create_config.sh prod",
     "build": "polymer build && ./node_modules/common-component/extract-source.sh rise-data-weather",
     "pretest": "eslint . && ./create_config.sh test",
-    "test": "polymer test"
+    "test": "polymer test",
+    "pretty": "eslint . --fix"
   },
   "repository": {
     "type": "git",

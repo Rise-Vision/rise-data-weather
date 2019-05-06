@@ -40,21 +40,35 @@
     >
   </rise-data-weather>
 
+  <ul id="log">
+  </ul>
+
   <script>
+    function log(text) {
+      console.log(text);
+      var ul = document.getElementById("log");
+      var li = document.createElement("li");
+      li.appendChild(document.createTextNode(text));
+      ul.appendChild(li);
+    }
+
     function configureComponents() {
       const start = new CustomEvent( "start" ),
         weather01 = document.querySelector('#rise-data-weather-01');
 
       weather01.addEventListener( "data-update", ( evt ) => {
         console.log( "data update", JSON.stringify(evt.detail) );
+        log(JSON.stringify(evt.detail));
       } );
 
       weather01.addEventListener( "data-error", ( evt ) => {
-        console.log( "data error", evt.detail );
+        console.log( "data error", JSON.stringify(evt.detail) );
+        log(JSON.stringify(evt.detail));
       } );
 
       weather01.addEventListener( "request-error", ( evt ) => {
-        console.log( "request error", evt.detail );
+        console.log( "request error", JSON.stringify(evt.detail) );
+        log(JSON.stringify(evt.detail));
       } );
 
       // Uncomment the following line if the weather component is marked as non-editable
