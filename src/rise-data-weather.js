@@ -1,6 +1,6 @@
 /* eslint-disable no-console */
 
-import { PolymerElement, html } from "@polymer/polymer";
+import { PolymerElement } from "@polymer/polymer";
 
 import { timeOut } from "@polymer/polymer/lib/utils/async.js";
 import { Debouncer } from "@polymer/polymer/lib/utils/debounce.js";
@@ -10,20 +10,20 @@ import "@polymer/iron-ajax/iron-ajax.js";
 
 class RiseDataWeather extends PolymerElement {
 
-  static get template() {
-    //handle-as=xml doesn't work (https://github.com/PolymerElements/iron-ajax/issues/53)
-    return html`
-      <iron-ajax
-          id="weather"
-          url=""
-          headers='{"X-Requested-With": "XMLHttpRequest"}'
-          handle-as="document"
-          on-response="_handleResponse"
-          on-error="_handleResponseError"
-          verbose="true">
-      </iron-ajax>
-    `;
-  }
+  // static get template() {
+  //   //handle-as=xml doesn't work (https://github.com/PolymerElements/iron-ajax/issues/53)
+  //   return html`
+  //     <iron-ajax
+  //         id="weather"
+  //         url=""
+  //         headers='{"X-Requested-With": "XMLHttpRequest"}'
+  //         handle-as="document"
+  //         on-response="_handleResponse"
+  //         on-error="_handleResponseError"
+  //         verbose="true">
+  //     </iron-ajax>
+  //   `;
+  // }
 
   static get properties() {
     return {
@@ -258,18 +258,31 @@ class RiseDataWeather extends PolymerElement {
     // TODO: Implement weather error catching
   }
 
-  _getData() {
-    const weather = this.$.weather;
-
+  _getUrl() {
     let url = weatherServerConfig.providerURL;
 
     if ( this.scale == "C" ) {
       url += "&metric=true";
     }
-
     url += "&name=" + encodeURIComponent( this.fullAddress );
-    weather.url = url;
-    weather.generateRequest();
+    return url;
+  }
+
+  _getData() {
+    // const weather = this.$.weather;
+    // weather.url = this._getUrl();
+    // weather.generateRequest();
+    fetch( this._getUrl(), {
+      headers: {
+        "X-Requested-With": "rise-data-weather"
+      }
+    }).then( res => {
+      return this._getCache().then( cache => {
+        this._handleResponse( res.clone());
+        return cache.put( res.url, res )
+      })
+    })
+
   }
 
   _refresh() {
@@ -286,20 +299,47 @@ class RiseDataWeather extends PolymerElement {
     }
   }
 
-  _handleStart() {
-    this._getData();
+  _getCache() {
+    return caches.open( "rise-data-weather" );
   }
 
-  _handleResponse( event, request ) {
-    this._log( "info", "response received", { response: request.response });
-    let element = request.response.evaluate(
-      "//observation[1]",
-      request.response,
-      null,
-      XPathResult.FIRST_ORDERED_NODE_TYPE,
-      null ).singleNodeValue;
+  _handleStart() {
+    this._getCache().then( cache => {
+      cache.match( this._getUrl())
+        .then( response => {
+          if ( response ) {
+            this._log( "info", "cached", {});
+            response.text().then( str => {
+              this._sendWeatherEvent( RiseDataWeather.EVENT_DATA_UPDATE, "CACHED::" + this._processData( str ));
+            })
+          } else {
+            this._log( "info", "not cached" );
+            this._getData();
+          }
+        });
+    });
+  }
 
-    this._sendWeatherEvent( RiseDataWeather.EVENT_DATA_UPDATE, element.getAttribute( "temperature" ));
+  _processData( body ) {
+    let parser = new DOMParser(),
+      xmlDoc = parser.parseFromString( body, "text/xml" ),
+      element = xmlDoc.evaluate(
+        "//observation[1]",
+        xmlDoc,
+        null,
+        XPathResult.FIRST_ORDERED_NODE_TYPE,
+        null ).singleNodeValue;
+
+    return element.getAttribute( "temperature" )
+  }
+
+  _handleResponse( resp ) {
+    this._log( "info", "response received", { response: resp.body });
+
+    resp.text().then( str => {
+      this._sendWeatherEvent( RiseDataWeather.EVENT_DATA_UPDATE, this._processData( str ));
+    })
+
   }
 
   _handleResponseError( event, request ) {
