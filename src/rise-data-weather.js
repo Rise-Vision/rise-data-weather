@@ -51,7 +51,11 @@ class RiseDataWeather extends PolymerElement {
   }
 
   static get CACHE_NAME() {
-    return "rise-data-weather"
+    return "rise-data-weather";
+  }
+
+  static get CACHE_DURATION() {
+    return 1000 * 60 * 60 * 2;
   }
 
   // Event name constants
@@ -100,6 +104,8 @@ class RiseDataWeather extends PolymerElement {
   }
 
   _init() {
+    this._deleteExpiredCache();
+
     const display_id = RisePlayerConfiguration.getDisplayId();
 
     if ( display_id && typeof display_id === "string" && display_id !== "DISPLAY_ID" ) {
@@ -109,6 +115,22 @@ class RiseDataWeather extends PolymerElement {
     this.addEventListener( RiseDataWeather.EVENT_START, this._handleStart, { once: true });
 
     this._sendWeatherEvent( RiseDataWeather.EVENT_CONFIGURED );
+  }
+
+  _deleteExpiredCache() {
+    this._getCache().then( cache => {
+      cache.keys().then( keys => {
+        keys.forEach( key => {
+          cache.match( key ).then( response => {
+            const date = new Date( response.headers.get( "date" ));
+
+            if ( Date.now() > date.getTime() + RiseDataWeather.CACHE_DURATION ) {
+              cache.delete( key );
+            }
+          });
+        });
+      });
+    });
   }
 
   _getComponentData() {
@@ -160,9 +182,7 @@ class RiseDataWeather extends PolymerElement {
 
   _requestData() {
     fetch( this._getUrl(), {
-      headers: {
-        "X-Requested-With": "rise-data-weather"
-      }
+      headers: { "X-Requested-With": "rise-data-weather" }
     }).then( res => {
       return this._getCache().then( cache => {
         this._handleResponse( res.clone());
@@ -175,28 +195,28 @@ class RiseDataWeather extends PolymerElement {
     let url = this._getUrl();
 
     this._getCache().then( cache => {
-      cache.match( url )
-        .then( response => {
-          if ( response ) {
-            this._log( "info", "found in cache", { url: url });
+      cache.match( url ).then( response => {
+        if ( response ) {
+          this._log( "info", "found in cache", { url: url });
 
-            const date = new Date(response.headers.get('date'));
-            // return cached response if newer than 2 hours
-            if(Date.now() < date.getTime() + 1000 * 60 * 60 * 2){
-              response.text().then( str => {
-                this._sendWeatherEvent( RiseDataWeather.EVENT_DATA_UPDATE, "CACHED::" + this._processData( str ));
-              });
-            } else {
-              this._log( "info", "removing cached", { url: url });
-              cache.delete(url);
+          const date = new Date( response.headers.get( "date" ));
 
-              this._requestData();
-            }
+          if ( Date.now() < date.getTime() + RiseDataWeather.CACHE_DURATION ) {
+            response.text().then( str => {
+              this._sendWeatherEvent( RiseDataWeather.EVENT_DATA_UPDATE, "CACHED::" + this._processData( str ));
+            });
+
           } else {
-            this._log( "info", "not cached", { url: url });
+            this._log( "info", "removing old cache entry", { url: url });
+            cache.delete( url );
+
             this._requestData();
           }
-        });
+        } else {
+          this._log( "info", "not cached", { url: url });
+          this._requestData();
+        }
+      });
     });
   }
 
