@@ -172,16 +172,28 @@ class RiseDataWeather extends PolymerElement {
   }
 
   _handleStart() {
+    let url = this._getUrl();
+
     this._getCache().then( cache => {
-      cache.match( this._getUrl())
+      cache.match( url )
         .then( response => {
           if ( response ) {
-            this._log( "info", "cached", {});
-            response.text().then( str => {
-              this._sendWeatherEvent( RiseDataWeather.EVENT_DATA_UPDATE, "CACHED::" + this._processData( str ));
-            })
+            this._log( "info", "found in cache", { url: url });
+
+            const date = new Date(response.headers.get('date'));
+            // return cached response if newer than 2 hours
+            if(Date.now() < date.getTime() + 1000 * 60 * 60 * 2){
+              response.text().then( str => {
+                this._sendWeatherEvent( RiseDataWeather.EVENT_DATA_UPDATE, "CACHED::" + this._processData( str ));
+              });
+            } else {
+              this._log( "info", "removing cached", { url: url });
+              cache.delete(url);
+
+              this._requestData();
+            }
           } else {
-            this._log( "info", "not cached" );
+            this._log( "info", "not cached", { url: url });
             this._requestData();
           }
         });
