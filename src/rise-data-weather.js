@@ -1,29 +1,11 @@
 /* eslint-disable no-console */
 
-import { PolymerElement, html } from "@polymer/polymer";
+import { PolymerElement } from "@polymer/polymer";
 
-import { timeOut } from "@polymer/polymer/lib/utils/async.js";
-import { Debouncer } from "@polymer/polymer/lib/utils/debounce.js";
 import { weatherServerConfig } from "./rise-data-weather-config.js";
 import { version } from "./rise-data-weather-version.js";
-import "@polymer/iron-ajax/iron-ajax.js";
 
 class RiseDataWeather extends PolymerElement {
-
-  static get template() {
-    //handle-as=xml doesn't work (https://github.com/PolymerElements/iron-ajax/issues/53)
-    return html`
-      <iron-ajax
-          id="weather"
-          url=""
-          headers='{"X-Requested-With": "XMLHttpRequest"}'
-          handle-as="document"
-          on-response="_handleResponse"
-          on-error="_handleResponseError"
-          verbose="true">
-      </iron-ajax>
-    `;
-  }
 
   static get properties() {
     return {
@@ -68,13 +50,12 @@ class RiseDataWeather extends PolymerElement {
     }
   }
 
-  // Each item of observers array is a method name followed by
-  // a comma-separated list of one or more dependencies.
-  static get observers() {
-    return [
-      "_reset(symbols, instrumentFields)",
-      "_handleError(weatherErrorMessage)"
-    ]
+  static get CACHE_NAME() {
+    return "rise-data-weather";
+  }
+
+  static get CACHE_DURATION() {
+    return 1000 * 60 * 60 * 2;
   }
 
   // Event name constants
@@ -100,11 +81,6 @@ class RiseDataWeather extends PolymerElement {
 
   constructor() {
     super();
-
-    this._refreshDebounceJob = null;
-    this._initialStart = true;
-    this._logDataUpdate = true;
-    this._weatherRequestRetryCount = 0;
   }
 
   ready() {
@@ -119,7 +95,17 @@ class RiseDataWeather extends PolymerElement {
     }
   }
 
+  connectedCallback() {
+    super.connectedCallback();
+  }
+
+  disconnectedCallback() {
+    super.disconnectedCallback();
+  }
+
   _init() {
+    this._deleteExpiredCache();
+
     const display_id = RisePlayerConfiguration.getDisplayId();
 
     if ( display_id && typeof display_id === "string" && display_id !== "DISPLAY_ID" ) {
@@ -131,14 +117,20 @@ class RiseDataWeather extends PolymerElement {
     this._sendWeatherEvent( RiseDataWeather.EVENT_CONFIGURED );
   }
 
-  connectedCallback() {
-    super.connectedCallback();
+  _deleteExpiredCache() {
+    this._getCache().then( cache => {
+      cache.keys().then( keys => {
+        keys.forEach( key => {
+          cache.match( key ).then( response => {
+            const date = new Date( response.headers.get( "date" ));
 
-    this._handleData = this._handleData.bind( this );
-  }
-
-  disconnectedCallback() {
-    super.disconnectedCallback();
+            if ( Date.now() > date.getTime() + RiseDataWeather.CACHE_DURATION ) {
+              cache.delete( key );
+            }
+          });
+        });
+      });
+    });
   }
 
   _getComponentData() {
@@ -147,6 +139,21 @@ class RiseDataWeather extends PolymerElement {
       id: this.id,
       version: version
     };
+  }
+
+  _getCache() {
+    return caches.open( RiseDataWeather.CACHE_NAME );
+  }
+
+  _getUrl() {
+    let url = weatherServerConfig.providerURL;
+
+    if ( this.scale == "C" ) {
+      url += "&metric=true";
+    }
+    url += "&name=" + encodeURIComponent( this.fullAddress );
+
+    return url;
   }
 
   _log( type, event, details = null, additionalFields ) {
@@ -165,26 +172,6 @@ class RiseDataWeather extends PolymerElement {
     }
   }
 
-  _reset() {
-    if ( !this._initialStart ) {
-      this._logDataUpdate = true;
-      this._refreshDebounceJob && this._refreshDebounceJob.cancel();
-
-      this._log( "info", "reset", {
-        symbols: this.symbols,
-        instrumentFields: this.instrumentFields
-      });
-
-      this._getData( this.symbols,
-        {
-          type: this.type,
-          duration: this.duration,
-        },
-        this.instrumentFields
-      );
-    }
-  }
-
   _sendWeatherEvent( eventName, detail = {}) {
     const event = new CustomEvent( eventName, {
       bubbles: true, composed: true, detail
@@ -193,117 +180,69 @@ class RiseDataWeather extends PolymerElement {
     this.dispatchEvent( event );
   }
 
-  _handleError() {
-    if ( !this._initialStart && this.weatherErrorMessage ) {
-      if ( this._weatherRequestRetryCount < 5 ) {
-        this._weatherRequestRetryCount += 1;
-
-        // need to reset to null otherwise weatherErrorMessage value may not change from next request failure
-        // and therefore observer won't trigger this handler
-        this.weatherErrorMessage = null;
-
-        timeOut.run(() => {
-          this._getData( this.symbols,
-            {
-              type: this.type,
-              duration: this.duration
-            },
-            this.instrumentFields
-          );
-        }, 1000 );
-      } else {
-        this._weatherRequestRetryCount = 0;
-        this._log( "error", RiseDataWeather.EVENT_REQUEST_ERROR, { message: this.weatherErrorMessage });
-        this._sendWeatherEvent( RiseDataWeather.EVENT_REQUEST_ERROR, { message: this.weatherErrorMessage });
-        this._refresh();
-      }
-    }
-  }
-
-  _handleData( event ) {
-    if ( !event.detail || !event.detail.length ) {
-      return;
-    }
-
-    const detail = event.detail [ 0 ];
-
-    this._weatherRequestRetryCount = 0;
-
-    if ( detail.hasOwnProperty( "errors" ) && detail.errors.length === 1 ) {
-      this._log( "error", RiseDataWeather.EVENT_DATA_ERROR, { error: detail.errors[ 0 ] });
-      this._sendWeatherEvent( RiseDataWeather.EVENT_DATA_ERROR, detail.errors[ 0 ]);
-    } else {
-      let data = {};
-
-      if ( detail.hasOwnProperty( "table" ) && detail.table ) {
-        data.data = detail.table;
-      }
-
-      if ( this._logDataUpdate ) {
-        // due to refresh every 60 seconds, prevent logging data-update event to BQ every time
-        this._logDataUpdate = false;
-
-        this._log( "info", RiseDataWeather.EVENT_DATA_UPDATE, data );
-      }
-
-      this._checkWeatherErrors( data );
-
-      this._sendWeatherEvent( RiseDataWeather.EVENT_DATA_UPDATE, data );
-    }
-
-    this._refresh();
-  }
-
-  _checkWeatherErrors() {
-    // TODO: Implement weather error catching
-  }
-
-  _getData() {
-    const weather = this.$.weather;
-
-    let url = weatherServerConfig.providerURL;
-
-    if ( this.scale == "C" ) {
-      url += "&metric=true";
-    }
-
-    url += "&name=" + encodeURIComponent( this.fullAddress );
-    weather.url = url;
-    weather.generateRequest();
-  }
-
-  _refresh() {
-    if ( !this._refreshDebounceJob || !this._refreshDebounceJob.isActive()) {
-      this._refreshDebounceJob = Debouncer.debounce( this._refreshDebounceJob, timeOut.after( 60000 ), () => {
-        this._getData( this.symbols,
-          {
-            type: this.type,
-            duration: this.duration,
-          },
-          this.instrumentFields
-        );
-      });
-    }
+  _requestData() {
+    fetch( this._getUrl(), {
+      headers: { "X-Requested-With": "rise-data-weather" }
+    }).then( res => {
+      return this._getCache().then( cache => {
+        this._handleResponse( res.clone());
+        return cache.put( res.url, res );
+      })
+    }).catch( this._handleFetchError.bind( this ));
   }
 
   _handleStart() {
-    this._getData();
+    let url = this._getUrl();
+
+    this._getCache().then( cache => {
+      cache.match( url ).then( response => {
+        if ( response ) {
+          this._log( "info", "found in cache", { url: url });
+
+          const date = new Date( response.headers.get( "date" ));
+
+          if ( Date.now() < date.getTime() + RiseDataWeather.CACHE_DURATION ) {
+            response.text().then( str => {
+              this._sendWeatherEvent( RiseDataWeather.EVENT_DATA_UPDATE, "CACHED::" + this._processData( str ));
+            });
+
+          } else {
+            this._log( "info", "removing old cache entry", { url: url });
+            cache.delete( url );
+
+            this._requestData();
+          }
+        } else {
+          this._log( "info", "not cached", { url: url });
+          this._requestData();
+        }
+      });
+    });
   }
 
-  _handleResponse( event, request ) {
-    this._log( "info", "response received", { response: request.response });
-    let element = request.response.evaluate(
-      "//observation[1]",
-      request.response,
-      null,
-      XPathResult.FIRST_ORDERED_NODE_TYPE,
-      null ).singleNodeValue;
+  _processData( body ) {
+    let parser = new DOMParser(),
+      xmlDoc = parser.parseFromString( body, "text/xml" ),
+      element = xmlDoc.evaluate(
+        "//observation[1]",
+        xmlDoc,
+        null,
+        XPathResult.FIRST_ORDERED_NODE_TYPE,
+        null ).singleNodeValue;
 
-    this._sendWeatherEvent( RiseDataWeather.EVENT_DATA_UPDATE, element.getAttribute( "temperature" ));
+    return element.getAttribute( "temperature" )
   }
 
-  _handleResponseError( event, request ) {
-    this._log( "error", "error response", { response: request.response });
+  _handleResponse( resp ) {
+    this._log( "info", "response received", { response: resp.body });
+
+    resp.text().then( str => {
+      this._sendWeatherEvent( RiseDataWeather.EVENT_DATA_UPDATE, this._processData( str ));
+    });
+  }
+
+  _handleFetchError() {
+    this._log( "error", "request error" );
     this._sendWeatherEvent( RiseDataWeather.EVENT_REQUEST_ERROR );
   }
 
