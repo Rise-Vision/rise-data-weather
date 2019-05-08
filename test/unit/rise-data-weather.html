@@ -116,7 +116,7 @@
     });
 
     suite( "init", () => {
-      test( "should clear old cache entries", (done) => {
+      test( "should clear old cache entries", done => {
         const keys = ['key1','key2'];
         const cache = { 
           keys: sinon.stub().resolves(keys),
@@ -168,38 +168,93 @@
       });
     });
 
-    // suite( "_handleStart", () => {
+    suite( "'start' event", () => {
+      let response;
 
-    //   test( "should call _getData() when this is the initial 'start'", () => {
-    //     const stub = sinon.stub( element, "_getData" );
+      setup(()=>{
+        response = new Response("<observation temperature=\"123\"/>",{headers:{date: new Date()}});
+        sinon.stub(window, "fetch").resolves(response);
+      });
 
-    //     const event = new CustomEvent( "start" );
-    //     element.dispatchEvent( event );
+      teardown(()=>{
+        window.fetch.restore();
+      });
 
-    //     assert.isTrue( stub.calledWith( element.symbols, {
-    //       duration: "1M",
-    //       type: "realtime"
-    //     }, [ "lastPrice", "netChange" ]) );
+      test( "should make a request and send data-update", done => {
+        const cache = { 
+          match: sinon.stub().resolves(null)
+        };
+        sinon.stub(caches, "open").resolves(cache);
 
-    //     assert.isFalse( element._initialStart, "_initialStart set to false" );
+        element.addEventListener("data-update", () => {
+          assert.isTrue(true);
+          done();
+        });
 
-    //     stub.restore();
-    //   } );
+        element.dispatchEvent( new CustomEvent( "start" ) );
 
-    //   test( "should not call _getData() when this is not the initial start", () => {
-    //     const spy = sinon.stub( element, "_getData" );
+        caches.open.restore();
+      });
 
-    //     element._initialStart = false;
+      test( "should cache requests", done => {
+        const cache = { 
+          match: sinon.stub().resolves(null),
+          put: (url, resp)=> {
+            assert.strictEqual(resp,response);
 
-    //     const event = new CustomEvent( "getData" );
-    //     element.dispatchEvent( event );
+            caches.open.restore();
+            done();
+          }
+        };
+        sinon.stub(caches, "open").resolves(cache);
 
-    //     assert.equal( spy.callCount, 0, "_getData is not called" );
+        element.dispatchEvent( new CustomEvent( "start" ) );
+      } );
 
-    //     spy.restore();
-    //   } );
+      test( "should send cached data if cache is valid", done => {
+        const cache = { 
+          match: sinon.stub().resolves(new Response("<observation temperature=\"222\"/>",{headers:{date: new Date()}}))
+        };
+        sinon.stub(caches, "open").resolves(cache);
 
-    // } );
+        element.addEventListener("data-update", evt => {
+          assert.equal(evt.detail,"CACHED::222");
+          done();
+        });
+
+        element.dispatchEvent( new CustomEvent( "start" ) );
+
+        caches.open.restore();
+      });
+
+      test( "should delete expired cached data", done => {
+        const cache = { 
+          match: sinon.stub().resolves(new Response("<observation temperature=\"222\"/>",{headers:{date: new Date('1980-01-01')}})),
+          delete: ()=> {
+            caches.open.restore();
+            done();
+          }
+        };
+        sinon.stub(caches, "open").resolves(cache);
+
+        element.dispatchEvent( new CustomEvent( "start" ) );
+      });
+
+      test( "should raise 'request-error' on request failures", done => {
+        window.fetch.rejects("dsa");
+        
+        const cache = { match: sinon.stub().resolves(null) };
+        sinon.stub(caches, "open").resolves(cache);      
+
+        element.addEventListener("request-error", evt => {
+          assert.isTrue(true);
+          done();
+        });
+
+        element.dispatchEvent( new CustomEvent( "start" ) );
+      });
+
+    });
 
   });
 </script>
