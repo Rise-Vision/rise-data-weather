@@ -10,6 +10,7 @@
   <script src="../../node_modules/mocha/mocha.js"></script>
   <script src="../../node_modules/chai/chai.js"></script>
   <script src="../../node_modules/wct-mocha/wct-mocha.js"></script>
+  <script src="../../node_modules/sinon/pkg/sinon.js"></script>
 
   <script type="text/javascript">
     RisePlayerConfiguration = {
@@ -41,6 +42,26 @@
       element = fixture("test-block");
     });
 
+    suite( "Properties", () => {
+
+      test( "should set scale", () => {
+        assert.equal( element.scale, "F" );
+      } );
+
+      test( "should set displayAddress ", () => {
+        assert.deepEqual( element.displayAddress, { city: "Toronto", province: "ON", country: "CA"} );
+      } );
+
+      test( "should set fullAddress", () => {
+        assert.equal( element.fullAddress, "Toronto,ON,CA" );
+      } );
+
+      test( "should set displayId", () => {
+        assert.equal( element.displayId, "preview" );
+      } );
+
+    } );
+
     suite( "_computeFullAddress", () => {
 
       test( "should return city,province,country", () => {
@@ -65,11 +86,87 @@
     } );
 
    
-    // suite( "ready", () => {
-    //   test( "should set display id when a valid display id is provided", () => {
-    //     assert.equal( element.displayId, "ABC123" );
-    //   } );
-    // } );
+    suite( "ready", () => {
+      let stub;
+
+      setup(()=>{
+        stub = sinon.stub( window, "addEventListener" );
+      });
+
+      teardown(()=>{
+        stub.restore();
+      });
+
+      test( "should listen for rise-components-ready and call init", () => {
+        element.ready();
+        assert.isTrue( stub.calledWith('rise-components-ready') );
+      });
+
+      test( "should call _init() if  RisePlayerConfiguration is configured", () => {
+        sinon.stub( element, '_init');
+
+        RisePlayerConfiguration.isConfigured = () => true ;
+        element.ready();
+        
+        assert.isTrue( element._init.calledOnce );
+        assert.isFalse( stub.calledOnce );
+
+        element._init.restore();
+      });
+    });
+
+    suite( "init", () => {
+      test( "should clear old cache entries", (done) => {
+        const keys = ['key1','key2'];
+        const cache = { 
+          keys: sinon.stub().resolves(keys),
+          match: function(key) {
+            let resp = {
+              headers: {
+                get: function() {
+                  if (key === 'key1') {
+                    return new Date(); //valid cache
+                  } else {
+                    return new Date('1980-01-01'); //expired cache
+                  }
+                }
+              }
+            };
+            return Promise.resolve(resp);
+          },
+          delete: function(key) {
+            assert.equal(key,'key2'); //deleting only expired
+            done()
+          }
+        };
+        sinon.stub(caches, "open").resolves(cache);
+        element._init();       
+        caches.open.restore();
+      });
+
+      test( "should set DisplayId", () => {
+        element._init();
+        assert.equal(element.displayId, "ABC123");
+      });
+
+      test( "should listen for start' event", () => {
+        sinon.stub(element, "addEventListener");
+
+        element._init();
+        assert.isTrue(element.addEventListener.calledWith( "start" ));
+
+        element.addEventListener.restore();
+      });
+
+      test( "should raise 'configured' event", () => {
+        sinon.stub(element, "dispatchEvent");
+
+        element._init();
+        assert.equal(element.dispatchEvent.getCall(0).args[0].type, "configured");
+
+        element.dispatchEvent.restore();
+      });
+    });
 
     // suite( "_handleStart", () => {
 

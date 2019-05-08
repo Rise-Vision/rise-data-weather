@@ -76,15 +76,23 @@ class RiseDataWeather extends PolymerElement {
   }
 
   _computeFullAddress( displayAddress ) {
-    if (!displayAddress) return "";
+    if ( !displayAddress ) {
+      return "";
+    }
 
     let resp = [];
-    
-    if (displayAddress.city) resp.push(displayAddress.city);
-    if (displayAddress.province) resp.push(displayAddress.province);
-    if (displayAddress.country) resp.push(displayAddress.country);
 
-    return resp.join( "," );    
+    if ( displayAddress.city ) {
+      resp.push( displayAddress.city );
+    }
+    if ( displayAddress.province ) {
+      resp.push( displayAddress.province );
+    }
+    if ( displayAddress.country ) {
+      resp.push( displayAddress.country );
+    }
+
+    return resp.join( "," );
   }
 
   constructor() {
