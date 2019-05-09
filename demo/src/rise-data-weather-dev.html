@@ -6,11 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <script src="../../node_modules/@webcomponents/webcomponentsjs/webcomponents-loader.js" async></script>
-  <script type="module">
-    // Basic noop script that helps forcing shared bundle file creation.
-    import { PolymerElement } from '@polymer/polymer/polymer-element.js';
-  </script>
-  <!-- <script src="https://widgets.risevision.com/beta/common/config-test.min.js"></script> -->
+    <!-- <script src="https://widgets.risevision.com/beta/common/config-test.min.js"></script> -->
   <!-- <script src="https://widgets.risevision.com/beta/common/common-template.min.js"></script> -->
   <script src="../../src/rise-data-weather.js" type="module"></script>
 </head>
@@ -18,8 +14,11 @@
 
   <rise-data-weather
     id="rise-data-weather-01"
-    label="Weather Forecast">
+    label="Weather Forecast"
+    scale="C">
   </rise-data-weather>
+
+<h1 id="current-temp"></h1>
 
 <ul id="log">
 </ul>
@@ -56,11 +55,13 @@
     } );
 
     weather01.addEventListener( "data-update", ( evt ) => {
-      log( "data update " + JSON.stringify(evt.detail) );
+      log( "data update " + evt.detail.observation.temperature );
+      document.getElementById("current-temp").innerHTML = evt.detail.observation.temperature 
+        + " " + evt.detail.observation.temperature_scale;
     } );
 
     weather01.addEventListener( "data-error", ( evt ) => {
-      log( "data error " + evt.detail );
+      log( "data-error " + evt.detail );
     } );
 
     weather01.addEventListener( "request-error", ( evt ) => {

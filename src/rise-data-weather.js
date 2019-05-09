@@ -4,6 +4,7 @@ import { PolymerElement } from "@polymer/polymer";
 
 import { weatherServerConfig } from "./rise-data-weather-config.js";
 import { version } from "./rise-data-weather-version.js";
+import { parseTinbu } from "./tinbu-parser.js";
 
 class RiseDataWeather extends PolymerElement {
 
@@ -218,9 +219,7 @@ class RiseDataWeather extends PolymerElement {
           const date = new Date( response.headers.get( "date" ));
 
           if ( Date.now() < date.getTime() + RiseDataWeather.CACHE_DURATION ) {
-            response.text().then( str => {
-              this._sendWeatherEvent( RiseDataWeather.EVENT_DATA_UPDATE, "CACHED::" + this._processData( str ));
-            });
+            response.text().then( this._processData.bind( this ));
 
           } else {
             this._log( "info", "removing old cache entry", { url: url });
@@ -236,25 +235,18 @@ class RiseDataWeather extends PolymerElement {
     });
   }
 
-  _processData( body ) {
-    let parser = new DOMParser(),
-      xmlDoc = parser.parseFromString( body, "text/xml" ),
-      element = xmlDoc.evaluate(
-        "//observation[1]",
-        xmlDoc,
-        null,
-        XPathResult.FIRST_ORDERED_NODE_TYPE,
-        null ).singleNodeValue;
-
-    return element.getAttribute( "temperature" )
+  _processData( content ) {
+    try {
+      this._sendWeatherEvent( RiseDataWeather.EVENT_DATA_UPDATE, parseTinbu( content ));
+    } catch ( e ) {
+      this._sendWeatherEvent( RiseDataWeather.EVENT_DATA_ERROR, e );
+    }
   }
 
   _handleResponse( resp ) {
     this._log( "info", "response received", { response: resp.body });
 
-    resp.text().then( str => {
-      this._sendWeatherEvent( RiseDataWeather.EVENT_DATA_UPDATE, this._processData( str ));
-    });
+    resp.text().then( this._processData.bind( this ));
   }
 
   _handleFetchError() {

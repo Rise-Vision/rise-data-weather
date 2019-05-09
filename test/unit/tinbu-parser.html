@@ -1,0 +1,74 @@
+<!doctype html>
+
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <script src="../../node_modules/@webcomponents/webcomponentsjs/webcomponents-loader.js"></script>
+  <script src="../../node_modules/@polymer/test-fixture/test-fixture.js"></script>
+  <script src="../../node_modules/mocha/mocha.js"></script>
+  <script src="../../node_modules/chai/chai.js"></script>
+  <script src="../../node_modules/wct-mocha/wct-mocha.js"></script>
+  <script src="../../node_modules/sinon/pkg/sinon.js"></script>
+
+  
+</head>
+<body>
+
+<script type="module">
+  import * as tinbu from '../../src/tinbu-parser.js';
+  import { currentExtendedXML, currentExtendedJSON } from '../data/current-extended.js';
+
+  const basicXMLStructure = "<report><observation/><location></location></report>";
+
+  suite("tinbu-parser", () => {
+
+    suite( "parseTinbu", () => {
+      test( "should parse valid data", () => {
+        let result = tinbu.parseTinbu(currentExtendedXML);
+        assert.isObject(result);
+        assert.isObject(result.observation);
+        assert.equal(result.observation.temperature, "41.00" );
+        assert.equal(result.observation.temperature_scale,"F");
+        assert.isObject(result.location);
+        assert.equal(result.location.city_name, "Toronto" );
+        assert.isArray(result.location.forecasts);
+        assert.isObject(result.location.forecasts[0]);
+        assert.equal(result.location.forecasts[0].high_temp,"43.88");
+        assert.equal(result.location.forecasts[0].low_temp,"34.88");
+        assert.deepEqual(result, currentExtendedJSON);
+
+        result = tinbu.parseTinbu(basicXMLStructure);
+        assert.isObject(result);
+        assert.isObject(result.observation);
+        assert.isObject(result.location);
+        assert.isDefined(result.observation.temperature);
+        assert.equal(result.observation.temperature_scale,"F");
+        assert.isNull(result.observation.temperature);
+      });
+
+      test( "should ignore non-expected attributes", () => {
+        assert.isUndefined(tinbu.parseTinbu("<report><observation invalid=\"attribute\"/><location></location></report>").observation.invalid);
+      });
+
+      test( "should set correct scale", () => {
+        assert.equal(tinbu.parseTinbu(basicXMLStructure).observation.temperature_scale,"F");
+        assert.equal(tinbu.parseTinbu("<report metric=\"true\"><observation/><location></location></report>").observation.temperature_scale,"C");
+        assert.equal(tinbu.parseTinbu("<report metric=\"false\"><observation/><location></location></report>").observation.temperature_scale,"F");
+      });
+
+      test( "should throw error on invalid data" , () => {
+        assert.throws(() => tinbu.parseTinbu("<incorrext-xml/>"));
+        assert.throws(() => tinbu.parseTinbu(null));
+        assert.throws(() => tinbu.parseTinbu());
+        assert.throws(() => tinbu.parseTinbu("<report></report>"));
+        assert.throws(() => tinbu.parseTinbu("<report><observation/></report>"));
+        assert.throws(() => tinbu.parseTinbu("<report><location></location></report>"));
+      });
+    });
+  });
+</script>
+
+</body>
+</html>
