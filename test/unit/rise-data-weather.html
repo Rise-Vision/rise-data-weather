@@ -16,6 +16,15 @@
     RisePlayerConfiguration = {
       isConfigured: () => false,
       getDisplayId: () => "ABC123",
+      DisplayData: {
+        onDisplayAddress: callback => {
+          callback({
+            city: "New York",
+            province: "NY",
+            country: "US"
+          });
+        }
+      },
       Logger: {
         info: () => {},
         warning: () => {},
@@ -180,6 +189,12 @@
       teardown(()=>{
         window.fetch.restore();
       });
+
+      test( "should update displayAddress", () => {
+        element.dispatchEvent( new CustomEvent( "start" ) );
+
+        assert.deepEqual( element.displayAddress, { city: "New York", province: "NY", country: "US"} );
+      } );
 
       test( "should make a request and send data-update", done => {
         const cache = { 
