@@ -29,7 +29,7 @@
         let result = tinbu.parseTinbu(currentExtendedXML);
         assert.isObject(result);
         assert.isObject(result.observation);
-        assert.equal(result.observation.temperature, "41.00" );
+        assert.equal(result.observation.temperature, "44.60" );
         assert.equal(result.observation.temperature_scale,"F");
         assert.isObject(result.location);
         assert.equal(result.location.city_name, "Toronto" );
@@ -66,6 +66,74 @@
         assert.throws(() => tinbu.parseTinbu("<report><observation/></report>"));
         assert.throws(() => tinbu.parseTinbu("<report><location></location></report>"));
       });
+
+      test( "should skip first observation as it was reported as unreliable" , () =>{
+        assert.equal(tinbu.parseTinbu(`<report metric="true">
+            <observation temperature="1"/>
+            <observation temperature="2"/>
+            <location></location>
+          </report>`
+          ).observation.temperature,"2");
+
+        assert.equal(tinbu.parseTinbu(`<report metric="true">
+            <observation temperature="1"/>
+            <observation temperature="2"/>
+            <observation temperature="3"/>
+            <location></location>
+          </report>`
+          ).observation.temperature,"2");
+      });
+
+      test( "should skip 'cw_no_report_icon' observations" , () =>{
+        assert.equal(tinbu.parseTinbu(`<report metric="true">
+            <observation temperature="111" icon_name="cw_no_report_icon"/>
+            <observation temperature="222" icon_name="cw_no_report_icon"/>
+            <observation temperature="333"/>
+            <location></location>
+          </report>`
+          ).observation.temperature,"333");
+
+        assert.equal(tinbu.parseTinbu(`<report metric="true">
+            <observation temperature="111"/>
+            <observation temperature="222" icon_name="cw_no_report_icon"/>
+            <observation temperature="333" />
+            <location></location>
+          </report>`
+          ).observation.temperature,"333");
+
+        assert.equal(tinbu.parseTinbu(`<report metric="true">
+            <observation temperature="111"/>
+            <observation temperature="222" icon_name="cw_no_report_icon"/>
+            <observation temperature="333" icon_name="cw_no_report_icon"/>
+            <location></location>
+          </report>`
+          ).observation.temperature,"111");
+
+        assert.equal(tinbu.parseTinbu(`<report metric="true">
+            <observation temperature="111"/>
+            <observation temperature="222" icon_name="cw_no_report_icon"/>
+            <observation temperature="333" icon_name="cw_no_report_icon"/>
+            <observation temperature="444"/>
+            <location></location>
+          </report>`
+          ).observation.temperature,"444");
+      });
+
+      test( "should use first 'cw_no_report_icon' observation if all are 'cw_no_report_icon'" , () =>{
+        assert.equal(tinbu.parseTinbu(`<report metric="true">
+            <observation temperature="1" icon_name="cw_no_report_icon"/>
+            <observation temperature="2" icon_name="cw_no_report_icon"/>
+            <location></location>
+          </report>`
+          ).observation.temperature,"1");
+
+        assert.equal(tinbu.parseTinbu(`<report metric="true">
+            <observation temperature="1" icon_name="cw_no_report_icon"/>
+            <location></location>
+          </report>`
+          ).observation.temperature,"1");
+      });     
+
     });
   });
 </script>
