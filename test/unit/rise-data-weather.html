@@ -169,10 +169,11 @@
     });
 
     suite( "'start' event", () => {
+      const validXmlData = "<report><observation temperature=\"12\"/><location/></report>";
       let response;
 
       setup(()=>{
-        response = new Response("<observation temperature=\"123\"/>",{headers:{date: new Date()}});
+        response = new Response(validXmlData,{headers:{date: new Date()}});
         sinon.stub(window, "fetch").resolves(response);
       });
 
@@ -213,12 +214,12 @@
 
       test( "should send cached data if cache is valid", done => {
         const cache = { 
-          match: sinon.stub().resolves(new Response("<observation temperature=\"222\"/>",{headers:{date: new Date()}}))
+          match: sinon.stub().resolves(new Response(validXmlData,{headers:{date: new Date()}}))
         };
         sinon.stub(caches, "open").resolves(cache);
 
         element.addEventListener("data-update", evt => {
-          assert.equal(evt.detail,"CACHED::222");
+          assert.equal(evt.detail.observation.temperature,"12");
           done();
         });
 
@@ -229,7 +230,7 @@
 
       test( "should delete expired cached data", done => {
         const cache = { 
-          match: sinon.stub().resolves(new Response("<observation temperature=\"222\"/>",{headers:{date: new Date('1980-01-01')}})),
+          match: sinon.stub().resolves(new Response(validXmlData,{headers:{date: new Date('1980-01-01')}})),
           delete: ()=> {
             caches.open.restore();
             done();
@@ -248,6 +249,24 @@
 
         element.addEventListener("request-error", evt => {
           assert.isTrue(true);
+          
+          caches.open.restore();
+          done();
+        });
+
+        element.dispatchEvent( new CustomEvent( "start" ) );
+      });
+
+      test( "should raise 'data-error' on invalid data", done => {
+        window.fetch.resolves(new Response("<invalid/>",{headers:{date: new Date()}}));
+        
+        const cache = { match: sinon.stub().resolves(null) };
+        sinon.stub(caches, "open").resolves(cache);      
+
+        element.addEventListener("data-error", evt => {
+          assert.isTrue(true);
+
+          caches.open.restore();
           done();
         });
 
