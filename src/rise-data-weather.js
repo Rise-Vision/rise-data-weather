@@ -159,7 +159,13 @@ class RiseDataWeather extends PolymerElement {
   }
 
   _getCache() {
-    return caches.open( RiseDataWeather.CACHE_NAME );
+    if ( caches && caches.open ) {
+      return caches.open( RiseDataWeather.CACHE_NAME );
+    } else {
+      this._log( "warning", "cache API not available" );
+
+      return Promise.reject();
+    }
   }
 
   _getUrl() {
@@ -208,7 +214,7 @@ class RiseDataWeather extends PolymerElement {
     }).catch( this._handleFetchError.bind( this ));
   }
 
-  _handleStart() {
+  _getData() {
     let url = this._getUrl();
 
     this._getCache().then( cache => {
@@ -241,6 +247,14 @@ class RiseDataWeather extends PolymerElement {
     } catch ( e ) {
       this._sendWeatherEvent( RiseDataWeather.EVENT_DATA_ERROR, e );
     }
+  }
+
+  _handleStart() {
+    RisePlayerConfiguration.DisplayData.onDisplayAddress(( displayAddress ) => {
+      this._setDisplayAddress( displayAddress );
+
+      this._getData();
+    })
   }
 
   _handleResponse( resp ) {

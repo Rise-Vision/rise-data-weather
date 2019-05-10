@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <script src="../../node_modules/@webcomponents/webcomponentsjs/webcomponents-loader.js" async></script>
-    <!-- <script src="https://widgets.risevision.com/beta/common/config-test.min.js"></script> -->
+  <!-- <script src="https://widgets.risevision.com/beta/common/config-test.min.js"></script> -->
   <!-- <script src="https://widgets.risevision.com/beta/common/common-template.min.js"></script> -->
   <script src="../../src/rise-data-weather.js" type="module"></script>
 </head>
@@ -27,6 +27,15 @@
   window.RisePlayerConfiguration = {
     isConfigured: function(){return false},
     getDisplayId: function(){return 'DisplayID'},
+    DisplayData: {
+      onDisplayAddress: function(callback){
+        callback({
+          city: "New York",
+          province: "NY",
+          country: "US"
+        });
+      }
+    },
     Logger: {
       info: _logFromLogger,
       warning: _logFromLogger,
