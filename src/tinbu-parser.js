@@ -37,14 +37,35 @@ function parseTinbu( body ) {
 }
 
 function extractObservation( xmlDoc, isMetric ) {
-  const element = xmlDoc
-      .evaluate( "/report/observation", xmlDoc, null, XPathResult.FIRST_ORDERED_NODE_TYPE )
-      .singleNodeValue,
 
+  const nodes = xmlDoc
+      .evaluate( "/report/observation",
+        xmlDoc, null, XPathResult.ORDERED_NODE_ITERATOR_TYPE ),
     result = {};
+  let nodeElement,
+    observation,
+    index = 0;
+
+  // Find an observation tag that has an icon_name other than 'cw_no_report_icon'
+  // Skip the first observation as it has been reported as unreliable
+  while (( nodeElement = nodes.iterateNext()) !== null ) {
+    if ( index !== 0 && nodeElement.getAttribute( "icon_name" ) !== "cw_no_report_icon" ) {
+      observation = nodeElement;
+      break;
+    }
+    index++;
+  }
+
+  // Use first observation if can't find a better one
+  if ( observation === undefined ) {
+    observation = xmlDoc
+      .evaluate( "/report/observation",
+        xmlDoc, null, XPathResult.FIRST_ORDERED_NODE_TYPE )
+      .singleNodeValue;
+  }
 
   observationFields.forEach( field => {
-    result[ field ] = element.getAttribute( field );
+    result[ field ] = observation.getAttribute( field );
   });
   result.temperature_scale = isMetric ? "C" : "F";
 
