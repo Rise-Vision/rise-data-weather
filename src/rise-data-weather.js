@@ -1,6 +1,8 @@
 /* eslint-disable no-console */
 
 import { PolymerElement } from "@polymer/polymer";
+import { timeOut } from "@polymer/polymer/lib/utils/async.js";
+import { Debouncer } from "@polymer/polymer/lib/utils/debounce.js";
 
 import { weatherServerConfig } from "./rise-data-weather-config.js";
 import { version } from "./rise-data-weather-version.js";
@@ -59,6 +61,14 @@ class RiseDataWeather extends PolymerElement {
     return 1000 * 60 * 60 * 2;
   }
 
+  static get API_RETRY() {
+    return {
+      INTERVAL: 1000 * 60,
+      COOLDOWN: 1000 * 60 * 10,
+      COUNT: 5
+    };
+  }
+
   // Event name constants
   static get EVENT_CONFIGURED() {
     return "configured";
@@ -98,6 +108,9 @@ class RiseDataWeather extends PolymerElement {
 
   constructor() {
     super();
+
+    this._weatherRequestRetryCount = 0;
+    this._refreshDebounceJob = null;
   }
 
   ready() {
@@ -203,6 +216,12 @@ class RiseDataWeather extends PolymerElement {
     this.dispatchEvent( event );
   }
 
+  _refresh( interval ) {
+    this._refreshDebounceJob = Debouncer.debounce( this._refreshDebounceJob, timeOut.after( interval ), () => {
+      this._getData();
+    });
+  }
+
   _requestData() {
     fetch( this._getUrl(), {
       headers: { "X-Requested-With": "rise-data-weather" }
@@ -244,6 +263,8 @@ class RiseDataWeather extends PolymerElement {
   _processData( content ) {
     try {
       this._sendWeatherEvent( RiseDataWeather.EVENT_DATA_UPDATE, parseTinbu( content ));
+
+      this._refresh( RiseDataWeather.API_RETRY.COOLDOWN );
     } catch ( e ) {
       this._sendWeatherEvent( RiseDataWeather.EVENT_DATA_ERROR, e );
     }
@@ -253,19 +274,30 @@ class RiseDataWeather extends PolymerElement {
     RisePlayerConfiguration.DisplayData.onDisplayAddress(( displayAddress ) => {
       this._setDisplayAddress( displayAddress );
 
-      this._getData();
+      this._refresh( 0 );
     })
   }
 
   _handleResponse( resp ) {
+    // NOTE: resp.body is a blank object
     this._log( "info", "response received", { response: resp.body });
 
     resp.text().then( this._processData.bind( this ));
   }
 
   _handleFetchError() {
-    this._log( "error", "request error" );
-    this._sendWeatherEvent( RiseDataWeather.EVENT_REQUEST_ERROR );
+    if ( this._weatherRequestRetryCount < RiseDataWeather.API_RETRY.COUNT ) {
+      this._weatherRequestRetryCount += 1;
+
+      this._refresh( RiseDataWeather.API_RETRY.INTERVAL );
+    } else {
+      this._weatherRequestRetryCount = 0;
+
+      this._log( "error", "request error" );
+      this._sendWeatherEvent( RiseDataWeather.EVENT_REQUEST_ERROR );
+
+      this._refresh( RiseDataWeather.API_RETRY.COOLDOWN );
+    }
   }
 
 }

@@ -25,12 +25,14 @@
 
 <script>
   window.RisePlayerConfiguration = {
+    onDisplayAddressCallback: null,
     isConfigured: function(){return false},
     getDisplayId: function(){return 'DisplayID'},
     DisplayData: {
       onDisplayAddress: function(callback){
+        RisePlayerConfiguration.onDisplayAddressCallback = callback;
         callback({
-          city: "New York",
+          city: "Buffalo",
           province: "NY",
           country: "US"
         });
