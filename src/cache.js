@@ -43,6 +43,7 @@ function put( res ) {
 
 function get( url ) {
   var _cache;
+
   return getCache().then( cache => {
     _cache = cache;
     return cache.match( url );

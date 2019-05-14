@@ -17,7 +17,13 @@
       isConfigured: () => false,
       getDisplayId: () => "ABC123",
       DisplayData: {
-        onDisplayAddress: sinon.stub()
+        onDisplayAddress: callback => {
+          callback({
+            city: "New York",
+            province: "NY",
+            country: "US"
+          });
+        }
       },
     };
   </script>
@@ -43,12 +49,13 @@
 
   suite("rise-data-weather", () => {
     let sandbox = sinon.createSandbox();
-    let clock = sandbox.useFakeTimers();
     let element;
 
     setup(() => {
       sandbox.stub(logger, "init");
       sandbox.stub(logger, "log");
+
+      sandbox.stub(window, "fetch");
 
       element = fixture("test-block");
     });
@@ -100,12 +107,11 @@
       });
     } );
 
-   
     suite( "ready", () => {
       let stub;
 
       setup(()=>{
-        stub = sinon.stub( window, "addEventListener" );
+        stub = sandbox.stub( window, "addEventListener" );
       });
 
       teardown(()=>{
@@ -118,11 +124,11 @@
       });
 
       test( "should call _init() if  RisePlayerConfiguration is configured", () => {
-        sinon.stub( element, '_init');
+        sandbox.stub( element, '_init');
 
         RisePlayerConfiguration.isConfigured = () => true ;
         element.ready();
-        
+
         assert.isTrue( element._init.calledOnce );
         assert.isFalse( stub.calledOnce );
 
@@ -137,7 +143,7 @@
       });
 
       test( "should listen for start' event", () => {
-        sinon.stub(element, "addEventListener");
+        sandbox.stub(element, "addEventListener");
 
         element._init();
         assert.isTrue(element.addEventListener.calledWith( "start" ));
@@ -146,7 +152,7 @@
       });
 
       test( "should raise 'configured' event", () => {
-        sinon.stub(element, "dispatchEvent");
+        sandbox.stub(element, "dispatchEvent");
 
         element._init();
         assert.equal(element.dispatchEvent.getCall(0).args[0].type, "configured");
@@ -156,91 +162,254 @@
     });
 
     suite( "'start' event", () => {
+      test( "should retrieve displayAddress", () => {
+        sandbox.spy(RisePlayerConfiguration.DisplayData, "onDisplayAddress");
+
+        element.dispatchEvent( new CustomEvent( "start" ) );
+      
+        assert.isTrue( RisePlayerConfiguration.DisplayData.onDisplayAddress.called );
+      } );
+      
+      test( "should update displayAddress", () => {
+        element.dispatchEvent( new CustomEvent( "start" ) );
+      
+        assert.deepEqual( element.displayAddress, { city: "New York", province: "NY", country: "US"} );
+      });
+    });
+
+    suite( "_getData", () => {
+      test( "should get the result from cache", done => {
+        sandbox.stub(cache, "get").resolves({
+          text: () => {
+            return Promise.resolve("text");
+          }
+        });
+        sandbox.stub(element, "_processData");
+
+        element._getData();
+
+        setTimeout(() => {
+          assert.isTrue( cache.get.called );
+          assert.isTrue( element._processData.called );
+          assert.isTrue( element._processData.calledWith("text") );          
+
+          assert.isFalse( window.fetch.called );
+
+          done();
+        }, 0);
+      });
+
+      test( "should call API if cache is not available", done => {
+        sandbox.stub(cache, "get").rejects();
+        sandbox.stub(element, "_processData");
+
+        window.fetch.resolves();
+
+        element._getData();
+
+        setTimeout(() => {
+          assert.isTrue( cache.get.called );
+          assert.isFalse( element._processData.called );
+
+          assert.isTrue( window.fetch.called );
+
+          done();
+        }, 0);
+      });
+
+    });
+
+    suite( "_requestData", () => {
       const validXmlData = "<report><observation temperature=\"12\"/><location/></report>";
       let response;
 
       setup(()=>{
         response = new Response(validXmlData,{headers:{date: new Date()}});
-        sinon.stub(window, "fetch");
       });
 
-      teardown(()=>{
-        window.fetch.restore();
+      test( "should cache requests", done => {
+        sandbox.stub(cache, "get").rejects();
+        sandbox.stub(cache, "put").resolves();
+        window.fetch.resolves(response);
+      
+        element._requestData();
+
+        setTimeout(() => {
+          assert.isTrue( cache.put.called );
+
+          done();
+        }, 0);
       });
 
-      test( "should retrieve displayAddress", () => {
-        element.dispatchEvent( new CustomEvent( "start" ) );
+      test( "should process data on successful requests", done => {
+        sandbox.stub(cache, "get").rejects();
+        sandbox.stub(cache, "put").resolves();
+        window.fetch.resolves(response);
 
-        assert.isTrue( RisePlayerConfiguration.DisplayData.onDisplayAddress.called );
-      } );
+        sandbox.stub(element, "_processData");
+      
+        element._requestData();
 
-      test( "should update displayAddress", () => {
-        RisePlayerConfiguration.DisplayData.onDisplayAddress.returns(callback => {
-          callback({
-            city: "New York",
-            province: "NY",
-            country: "US"
-          });
+        setTimeout(() => {
+          assert.isTrue( element._processData.called );
+          assert.isTrue( element._processData.calledWith( validXmlData ) );          
+
+          done();
+        }, 0);
+      });
+
+      test( "should handle request failures", done => {
+        sandbox.stub(cache, "get").rejects();
+
+        window.fetch.rejects("dsa");
+      
+        sandbox.stub(element, "_handleFetchError");
+
+        element._requestData();
+
+        setTimeout(() => {
+          assert.isTrue( element._handleFetchError.called );
+
+          done();
+        }, 0);
+      });
+
+      suite( "data refresh mechanism", () => {
+        let clock;
+        
+        setup(() => {
+          clock = sandbox.useFakeTimers();
         });
 
-        element.dispatchEvent( new CustomEvent( "start" ) );
+        test( "should use a debounce job for refresh", () => {
+          element._refresh();
 
-        assert.deepEqual( element.displayAddress, { city: "New York", province: "NY", country: "US"} );
+          assert.isObject( element._refreshDebounceJob );
+        });
+
+        test( "should handle fetch error and enqueue debouncer", () => {
+          sandbox.stub(element, "_refresh");
+
+          element._handleFetchError();
+
+          assert.isTrue( element._weatherRequestRetryCount === 1 );
+          assert.isTrue( element._refresh.called );
+          assert.isTrue( element._refresh.calledWith(1000 * 60) );
+        });
+
+        test( "should debounce and call _getData after interval", () => {
+          sandbox.stub(element, "_getData");
+
+          element._handleFetchError();
+
+          assert.isFalse( element._getData.called );
+
+          clock.tick(1000 * 30);
+
+          assert.isFalse( element._getData.called );
+
+          clock.tick(1000 * 30);
+          assert.isTrue( element._getData.called );
+        });
+
+        test( "should send error request and set API cooldown after 5 failures", () => {
+          sandbox.stub(element, "_refresh");
+
+          element._weatherRequestRetryCount = 5;
+          element._handleFetchError();
+
+          assert.isTrue( element._weatherRequestRetryCount === 0 );
+          assert.isTrue( element._refresh.called );
+          assert.isTrue( element._refresh.calledWith(1000 * 60 * 10) );
+
+        });
+
+        test( "should raise 'request-error' on request failures", done => {
+          sandbox.stub(element, "_refresh");
+
+          element._weatherRequestRetryCount = 5;
+        
+          element.addEventListener("request-error", evt => {
+            assert.isTrue(true);
+        
+            done();
+          });
+        
+          element._handleFetchError();
+        });
+
+        test( "should debounce existing cooldown", () => {
+          sandbox.stub(element, "_getData");
+
+          element._refresh( 5000 );
+
+          element._refresh( 100 );
+
+          clock.tick(100);
+
+          assert.isTrue( element._getData.calledOnce );
+
+          clock.tick(5000);
+
+          assert.isTrue( element._getData.calledOnce );
+        });
+
+        test( "should debounce existing cooldown 2", () => {
+          sandbox.stub(element, "_getData");
+
+          element._refresh( 100 );
+
+          element._refresh( 5000 );
+
+          clock.tick(100);
+
+          assert.isFalse( element._getData.called );
+
+          clock.tick(5000);
+
+          assert.isTrue( element._getData.calledOnce );
+        });
+
       });
 
-      // test( "should raise 'request-error' on request failures", done => {
-      //   window.fetch.rejects("dsa");
-      // 
-      //   sandbox.stub(cache, "get").rejects();
-      // 
-      //   element.addEventListener("request-error", evt => {
-      //     assert.isTrue(true);
-      // 
-      //     done();
-      //   });
-      // 
-      //   element.dispatchEvent( new CustomEvent( "start" ) );
-      // });
+    });
+
+    suite( "_processData", () => {
+      const validXmlData = "<report><observation temperature=\"12\"/><location/></report>";
+      let response;
+
+      setup(()=>{
+        response = new Response(validXmlData,{headers:{date: new Date()}});
+      });
+
+      test( "should make a request and send data-update", done => {
+        sandbox.stub(cache, "get").rejects();
+        sandbox.stub(cache, "put").resolves();
+        window.fetch.resolves(response);
+
+        element.addEventListener("data-update", () => {
+          assert.isTrue(true);
+          done();
+        });
       
-      // test( "should raise 'data-error' on invalid data", done => {
-      //   window.fetch.resolves(new Response("<invalid/>",{headers:{date: new Date()}}));
-      // 
-      //   const cache = { match: sinon.stub().resolves(null) };
-      //   sinon.stub(caches, "open").resolves(cache);      
-      // 
-      //   element.addEventListener("data-error", evt => {
-      //     assert.isTrue(true);
-      // 
-      //     caches.open.restore();
-      //     done();
-      //   });
-      // 
-      //   element.dispatchEvent( new CustomEvent( "start" ) );
-      // });
+        element._requestData();
+      });
 
-      // test( "should make a request and send data-update", done => {
-      //   sandbox.stub(cache, "get").rejects();
-      //   sandbox.stub(cache, "put").resolves();
-      // 
-      //   element.addEventListener("data-update", () => {
-      //     assert.isTrue(true);
-      //     done();
-      //   });
-      // 
-      //   element.dispatchEvent( new CustomEvent( "start" ) );
-      // });
-      // 
-      // test( "should cache requests", done => {
-      //   sandbox.stub(cache, "get").rejects();
-      //   sandbox.spy(cache, "put", (url, resp)=> {
-      //     assert.strictEqual(resp,response);
-      // 
-      //     done();
-      //   });
-      // 
-      //   element.dispatchEvent( new CustomEvent( "start" ) );
-      // });
-
+      test( "should raise 'data-error' on invalid data", done => {
+        window.fetch.resolves(new Response("<invalid/>",{headers:{date: new Date()}}));
+      
+        const cache = { match: sandbox.stub().resolves(null) };
+        sandbox.stub(caches, "open").resolves(cache);      
+      
+        element.addEventListener("data-error", evt => {
+          assert.isTrue(true);
+      
+          caches.open.restore();
+          done();
+        });
+      
+        element._requestData();
+      });
     });
 
   });
