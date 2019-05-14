@@ -44,15 +44,6 @@ class RiseDataWeather extends PolymerElement {
       },
 
       /**
-       * The id of the display running this instance of the component.
-       */
-      displayId: {
-        type: String,
-        readOnly: true,
-        value: "preview"
-      },
-
-      /**
        * The result of the Weather API.
        */
       weatherData: {
@@ -66,6 +57,7 @@ class RiseDataWeather extends PolymerElement {
     return {
       INTERVAL: 1000 * 60,
       COOLDOWN: 1000 * 60 * 10,
+      REFRESH: 1000 * 60 * 60,
       COUNT: 5
     };
   }
@@ -129,12 +121,6 @@ class RiseDataWeather extends PolymerElement {
   _init() {
     logger.init( this.id );
 
-    const display_id = RisePlayerConfiguration.getDisplayId();
-
-    if ( display_id && typeof display_id === "string" && display_id !== "DISPLAY_ID" ) {
-      this._setDisplayId( display_id );
-    }
-
     this.addEventListener( RiseDataWeather.EVENT_START, this._handleStart, { once: true });
 
     this._sendWeatherEvent( RiseDataWeather.EVENT_CONFIGURED );
@@ -191,13 +177,13 @@ class RiseDataWeather extends PolymerElement {
     try {
       data = parseTinbu( content );
 
-      if ( !this.weatherData || this.weatherData.reportDate < data.reportDate ) {
+      if ( !( this.weatherData && this.weatherData.reportDate ) || this.weatherData.reportDate.getTime() !== data.reportDate.getTime()) {
         this._setWeatherData( data );
 
         this._sendWeatherEvent( RiseDataWeather.EVENT_DATA_UPDATE, this.weatherData );
       }
 
-      this._refresh( RiseDataWeather.FETCH_CONFIG.COOLDOWN );
+      this._refresh( RiseDataWeather.FETCH_CONFIG.REFRESH );
     } catch ( e ) {
       this._sendWeatherEvent( RiseDataWeather.EVENT_DATA_ERROR, e );
     }
