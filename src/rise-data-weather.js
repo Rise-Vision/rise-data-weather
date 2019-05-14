@@ -5,7 +5,8 @@ import { timeOut } from "@polymer/polymer/lib/utils/async.js";
 import { Debouncer } from "@polymer/polymer/lib/utils/debounce.js";
 
 import { weatherServerConfig } from "./rise-data-weather-config.js";
-import { version } from "./rise-data-weather-version.js";
+import { logger } from "./logger.js";
+import { cache } from "./cache.js";
 import { parseTinbu } from "./tinbu-parser.js";
 
 class RiseDataWeather extends PolymerElement {
@@ -49,19 +50,19 @@ class RiseDataWeather extends PolymerElement {
         type: String,
         readOnly: true,
         value: "preview"
+      },
+
+      /**
+       * The result of the Weather API.
+       */
+      weatherData: {
+        type: Object,
+        readOnly: true
       }
     }
   }
 
-  static get CACHE_NAME() {
-    return "rise-data-weather";
-  }
-
-  static get CACHE_DURATION() {
-    return 1000 * 60 * 60 * 2;
-  }
-
-  static get API_RETRY() {
+  static get FETCH_CONFIG() {
     return {
       INTERVAL: 1000 * 60,
       COOLDOWN: 1000 * 60 * 10,
@@ -125,16 +126,8 @@ class RiseDataWeather extends PolymerElement {
     }
   }
 
-  connectedCallback() {
-    super.connectedCallback();
-  }
-
-  disconnectedCallback() {
-    super.disconnectedCallback();
-  }
-
   _init() {
-    this._deleteExpiredCache();
+    logger.init( this.id );
 
     const display_id = RisePlayerConfiguration.getDisplayId();
 
@@ -147,40 +140,6 @@ class RiseDataWeather extends PolymerElement {
     this._sendWeatherEvent( RiseDataWeather.EVENT_CONFIGURED );
   }
 
-  _deleteExpiredCache() {
-    this._getCache().then( cache => {
-      cache.keys().then( keys => {
-        keys.forEach( key => {
-          cache.match( key ).then( response => {
-            const date = new Date( response.headers.get( "date" ));
-
-            if ( Date.now() > date.getTime() + RiseDataWeather.CACHE_DURATION ) {
-              cache.delete( key );
-            }
-          });
-        });
-      });
-    });
-  }
-
-  _getComponentData() {
-    return {
-      name: "rise-data-weather",
-      id: this.id,
-      version: version
-    };
-  }
-
-  _getCache() {
-    if ( caches && caches.open ) {
-      return caches.open( RiseDataWeather.CACHE_NAME );
-    } else {
-      this._log( "warning", "cache API not available" );
-
-      return Promise.reject();
-    }
-  }
-
   _getUrl() {
     let url = weatherServerConfig.providerURL;
 
@@ -190,22 +149,6 @@ class RiseDataWeather extends PolymerElement {
     url += "&name=" + encodeURIComponent( this.fullAddress );
 
     return url;
-  }
-
-  _log( type, event, details = null, additionalFields ) {
-    const componentData = this._getComponentData();
-
-    switch ( type ) {
-    case "info":
-      RisePlayerConfiguration.Logger.info( componentData, event, details, additionalFields );
-      break;
-    case "warning":
-      RisePlayerConfiguration.Logger.warning( componentData, event, details, additionalFields );
-      break;
-    case "error":
-      RisePlayerConfiguration.Logger.error( componentData, event, details, additionalFields );
-      break;
-    }
   }
 
   _sendWeatherEvent( eventName, detail = {}) {
@@ -226,45 +169,35 @@ class RiseDataWeather extends PolymerElement {
     fetch( this._getUrl(), {
       headers: { "X-Requested-With": "rise-data-weather" }
     }).then( res => {
-      return this._getCache().then( cache => {
-        this._handleResponse( res.clone());
-        return cache.put( res.url, res );
-      })
+      this._handleResponse( res.clone());
+
+      return cache.put( res.url, res );
     }).catch( this._handleFetchError.bind( this ));
   }
 
   _getData() {
     let url = this._getUrl();
 
-    this._getCache().then( cache => {
-      cache.match( url ).then( response => {
-        if ( response ) {
-          this._log( "info", "found in cache", { url: url });
-
-          const date = new Date( response.headers.get( "date" ));
-
-          if ( Date.now() < date.getTime() + RiseDataWeather.CACHE_DURATION ) {
-            response.text().then( this._processData.bind( this ));
-
-          } else {
-            this._log( "info", "removing old cache entry", { url: url });
-            cache.delete( url );
-
-            this._requestData();
-          }
-        } else {
-          this._log( "info", "not cached", { url: url });
-          this._requestData();
-        }
-      });
+    cache.get( url ).then( response => {
+      response.text().then( this._processData.bind( this ));
+    }).catch(() => {
+      this._requestData();
     });
   }
 
   _processData( content ) {
-    try {
-      this._sendWeatherEvent( RiseDataWeather.EVENT_DATA_UPDATE, parseTinbu( content ));
+    var data;
 
-      this._refresh( RiseDataWeather.API_RETRY.COOLDOWN );
+    try {
+      data = parseTinbu( content );
+
+      if ( !this.weatherData || this.weatherData.reportDate < data.reportDate ) {
+        this._setWeatherData( data );
+
+        this._sendWeatherEvent( RiseDataWeather.EVENT_DATA_UPDATE, this.weatherData );
+      }
+
+      this._refresh( RiseDataWeather.FETCH_CONFIG.COOLDOWN );
     } catch ( e ) {
       this._sendWeatherEvent( RiseDataWeather.EVENT_DATA_ERROR, e );
     }
@@ -280,23 +213,23 @@ class RiseDataWeather extends PolymerElement {
 
   _handleResponse( resp ) {
     // NOTE: resp.body is a blank object
-    this._log( "info", "response received", { response: resp.body });
+    logger.log( "info", "response received", { response: resp.body });
 
     resp.text().then( this._processData.bind( this ));
   }
 
   _handleFetchError() {
-    if ( this._weatherRequestRetryCount < RiseDataWeather.API_RETRY.COUNT ) {
+    if ( this._weatherRequestRetryCount < RiseDataWeather.FETCH_CONFIG.COUNT ) {
       this._weatherRequestRetryCount += 1;
 
-      this._refresh( RiseDataWeather.API_RETRY.INTERVAL );
+      this._refresh( RiseDataWeather.FETCH_CONFIG.INTERVAL );
     } else {
       this._weatherRequestRetryCount = 0;
 
-      this._log( "error", "request error" );
+      logger.log( "error", "request error" );
       this._sendWeatherEvent( RiseDataWeather.EVENT_REQUEST_ERROR );
 
-      this._refresh( RiseDataWeather.API_RETRY.COOLDOWN );
+      this._refresh( RiseDataWeather.FETCH_CONFIG.COOLDOWN );
     }
   }
 
