@@ -20,22 +20,47 @@ const observationFields = [
   ];
 
 function parseTinbu( body ) {
-  const xmlDoc = new DOMParser().parseFromString( body, "text/xml" ),
+  try {
+    const xmlDoc = new DOMParser().parseFromString( body, "text/xml" ),
 
-    report = xmlDoc
-      .evaluate( "/report", xmlDoc, null, XPathResult.FIRST_ORDERED_NODE_TYPE )
-      .singleNodeValue,
+      report = validateData( body, xmlDoc ),
 
-    isMetric = report.getAttribute( "metric" ) === "true",
-    reportDate = new Date( report.getAttribute( "localtime" ) || Date.now()),
+      isMetric = report.getAttribute( "metric" ) === "true",
+      reportDate = new Date( report.getAttribute( "localtime" ) || Date.now()),
 
-    result = {
-      reportDate,
-      observation: extractObservation( xmlDoc, isMetric ),
-      location: extractLocation( xmlDoc, isMetric )
-    };
+      result = {
+        reportDate,
+        observation: extractObservation( xmlDoc, isMetric ),
+        location: extractLocation( xmlDoc, isMetric )
+      };
 
-  return result;
+    return result;
+  } catch ( e ) {
+    throw new Error( `Invalid weather report (${e}).` );
+  }
+}
+
+function validateData( body, xmlDoc ) {
+  const report = xmlDoc
+    .evaluate( "/report", xmlDoc, null, XPathResult.FIRST_ORDERED_NODE_TYPE )
+    .singleNodeValue;
+
+  if ( report === null ) {
+    //report data not found, checking for error type/details
+    if ( body === "Wrong Passcode." ) {
+      throw new Error( "Wrong Passcode" );
+    }
+    const error = xmlDoc
+      .evaluate( "/cw_report/cw_error", xmlDoc, null, XPathResult.FIRST_ORDERED_NODE_TYPE )
+      .singleNodeValue;
+
+    if ( error !== null ) {
+      throw new Error( error.textContent );
+    } else {
+      throw new Error( "Report data is missing" );
+    }
+  }
+  return report;
 }
 
 function extractObservation( xmlDoc, isMetric ) {
@@ -65,6 +90,9 @@ function extractObservation( xmlDoc, isMetric ) {
         xmlDoc, null, XPathResult.FIRST_ORDERED_NODE_TYPE )
       .singleNodeValue;
   }
+  if ( observation === null ) {
+    throw new Error( "Observation data is missing" );
+  }
 
   observationFields.forEach( field => {
     result[ field ] = observation.getAttribute( field );
@@ -80,6 +108,10 @@ function extractLocation( xmlDoc, isMetric ) {
       .singleNodeValue,
 
     result = {};
+
+  if ( element === null ) {
+    throw new Error( "Location data is missing" );
+  }
 
   locationFields.forEach( field => {
     result[ field ] = element.getAttribute( field );

@@ -332,4 +332,13 @@ export const currentExtendedXML = `<?xml version="1.0" encoding="UTF-8"?>
         }
       ]
     }
-  }
+  },
+
+  noCityError = `<?xml version="1.0" encoding="UTF-8"?>
+<cw_report isodate="2019-05-14T19:57:40.93+00:00" proc="xml-sac-1" version="R3_1_122"  >
+  <cw_error num="100290" ref="current_extended:29">IO: No City ID Selected</cw_error>
+</cw_report>`,
+
+  noPasscodeError = "Wrong Passcode.",
+
+  wrongPasscodeError = "Wrong Passcode.";
