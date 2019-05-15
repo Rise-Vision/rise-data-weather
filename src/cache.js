@@ -36,9 +36,11 @@ function deleteExpiredCache() {
 }
 
 function put( res ) {
-  return getCache().then( cache => {
+  getCache().then( cache => {
     return cache.put( res.url, res );
-  })
+  }).catch( err => {
+    logger.log( "warning", "cache put failed", { url: res.url }, err);
+  });
 }
 
 function get( url ) {

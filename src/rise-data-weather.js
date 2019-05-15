@@ -157,7 +157,7 @@ class RiseDataWeather extends PolymerElement {
     }).then( res => {
       this._handleResponse( res.clone());
 
-      return cache.put( res.url, res );
+      cache.put( res );
     }).catch( this._handleFetchError.bind( this ));
   }
 
