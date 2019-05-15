@@ -407,7 +407,7 @@
         }, 10);
       });
 
-      test( "should not send data-update if returned data has a different timestamp", done => {
+      test( "should send data-update if returned data has a different timestamp", done => {
         sandbox.stub(cache, "get").rejects();
         sandbox.stub(cache, "put").resolves();
         window.fetch.resolves(response);

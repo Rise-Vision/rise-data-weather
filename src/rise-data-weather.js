@@ -55,7 +55,7 @@ class RiseDataWeather extends PolymerElement {
 
   static get FETCH_CONFIG() {
     return {
-      INTERVAL: 1000 * 60,
+      RETRY: 1000 * 60,
       COOLDOWN: 1000 * 60 * 10,
       REFRESH: 1000 * 60 * 60,
       COUNT: 5
@@ -208,7 +208,7 @@ class RiseDataWeather extends PolymerElement {
     if ( this._weatherRequestRetryCount < RiseDataWeather.FETCH_CONFIG.COUNT ) {
       this._weatherRequestRetryCount += 1;
 
-      this._refresh( RiseDataWeather.FETCH_CONFIG.INTERVAL );
+      this._refresh( RiseDataWeather.FETCH_CONFIG.RETRY );
     } else {
       this._weatherRequestRetryCount = 0;
 
