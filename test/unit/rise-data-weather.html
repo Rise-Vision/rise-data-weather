@@ -66,27 +66,39 @@
         assert.equal( element.scale, "F" );
       } );
 
-      test( "should set displayAddress ", () => {
-        assert.deepEqual( element.displayAddress, { city: "Toronto", province: "ON", country: "CA"} );
+      test( "should not set any displayAddress ", () => {
+        assert.notOk( element.displayAddress );
       } );
 
-      test( "should set fullAddress", () => {
-        assert.equal( element.fullAddress, "Toronto,ON,CA" );
+      test( "should not set a fullAddress", () => {
+        assert.notOk( element.fullAddress );
       } );
 
     } );
 
     suite( "_computeFullAddress", () => {
 
-      test( "should return city,province,country", () => {
-        assert.equal(element._computeFullAddress( { city: "Toronto", province: "ON", country: "CA"} ), "Toronto,ON,CA");
-        assert.equal(element._computeFullAddress( { city: "Santos", province: "SP", country: "BR"} ), "Santos,SP,BR");
+      test( "should return city,province,postalCode,country", () => {
+        assert.equal(element._computeFullAddress( { city: "Toronto", province: "ON", postalCode: "M4M 1A1", country: "CA"} ), "Toronto,ON,M4M 1A1,CA");
+        assert.equal(element._computeFullAddress( { city: "Santos", province: "SP", postalCode: 11045, country: "BR"} ), "Santos,SP,11045,BR");
       });
 
-      test( "should skip non-provided values", () => {
+      test( "should allow city, country", () => {
         assert.equal(element._computeFullAddress( { city: "Toronto", country: "CA"} ), "Toronto,CA");
-        assert.equal(element._computeFullAddress( { province: "SP", country: "BR"} ), "SP,BR");
-        assert.equal(element._computeFullAddress( { province: "SP"} ), "SP");
+        assert.equal(element._computeFullAddress( { city: "Toronto", province: "ON", country: "CA"} ), "Toronto,ON,CA");
+      });
+
+      test( "should allow zip/postal code", () => {
+        assert.equal(element._computeFullAddress( { postalCode: "M4M 1A1"} ), "M4M 1A1");
+        assert.equal(element._computeFullAddress( { postalCode: 14202} ), "14202");
+        assert.equal(element._computeFullAddress( { city: "Toronto", postalCode: "M4M 1A1"} ), "Toronto,M4M 1A1");
+      });
+
+      test( "should return empty string in other cases", () => {
+        assert.equal(element._computeFullAddress( { city: "Santos", province: "SP"} ), "");
+        assert.equal(element._computeFullAddress( { province: "SP", country: "BR"} ), "");
+        assert.equal(element._computeFullAddress( { country: "BR"} ), "");
+        assert.equal(element._computeFullAddress( { province: "SP"} ), "");
       });
 
       test( "should return empty string if arguments are not provided", () => {
@@ -152,6 +164,44 @@
       
         assert.deepEqual( element.displayAddress, { city: "New York", province: "NY", country: "US"} );
       });
+    });
+
+    suite( "_fullAddressUpdated", () => {
+      test( "should notify when fullAddress is updated", () => {
+        sandbox.stub(element, "_fullAddressUpdated");
+
+        element._setDisplayAddress({});
+
+        assert.isTrue( element._fullAddressUpdated.called );
+      } );
+
+      test( "should call refresh when fullAddress is valid", () => {
+        sandbox.stub(element, "_refresh");
+
+        element._setDisplayAddress({city: "Toronto", country: "CA"});
+
+        assert.isTrue( element._refresh.called );
+      } );
+
+      test( "should reset requestRetryCount count", () => {
+        element._weatherRequestRetryCount = 3;
+        sandbox.stub(element, "_refresh");
+
+        element._setDisplayAddress({city: "Toronto", country: "CA"});
+
+        assert.equal( element._weatherRequestRetryCount, 0 );
+      } );
+
+      test( "should send an error event when fullAddress is not valid", () => {
+        sandbox.stub(element, "_refresh");
+        sandbox.stub(element, "_sendWeatherEvent");
+
+        element._setDisplayAddress({});
+
+        assert.isTrue( element._sendWeatherEvent.called );
+        assert.isFalse( element._refresh.called );
+      } );
+
     });
 
     suite( "_getData", () => {

@@ -26,12 +26,7 @@ class RiseDataWeather extends CacheMixin( PolymerElement ) {
        */
       displayAddress: {
         type: Object,
-        readOnly: true,
-        value: {
-          city: "Toronto",
-          province: "ON",
-          country: "CA"
-        }
+        readOnly: true
       },
 
       /**
@@ -39,7 +34,8 @@ class RiseDataWeather extends CacheMixin( PolymerElement ) {
       */
       fullAddress: {
         type: String,
-        computed: "_computeFullAddress(displayAddress)"
+        computed: "_computeFullAddress(displayAddress)",
+        observer: "_fullAddressUpdated"
       },
 
       /**
@@ -81,6 +77,8 @@ class RiseDataWeather extends CacheMixin( PolymerElement ) {
   _computeFullAddress( displayAddress ) {
     if ( !displayAddress ) {
       return "";
+    } else if ( !( displayAddress.postalCode || ( displayAddress.city && displayAddress.country ))) {
+      return "";
     }
 
     let resp = [];
@@ -90,6 +88,9 @@ class RiseDataWeather extends CacheMixin( PolymerElement ) {
     }
     if ( displayAddress.province ) {
       resp.push( displayAddress.province );
+    }
+    if ( displayAddress.postalCode ) {
+      resp.push( displayAddress.postalCode );
     }
     if ( displayAddress.country ) {
       resp.push( displayAddress.country );
@@ -191,9 +192,21 @@ class RiseDataWeather extends CacheMixin( PolymerElement ) {
   _handleStart() {
     RisePlayerConfiguration.DisplayData.onDisplayAddress(( displayAddress ) => {
       this._setDisplayAddress( displayAddress );
+    });
+  }
+
+  _fullAddressUpdated() {
+    var message = "displayAddress is incomplete or missing";
+
+    if ( this.fullAddress ) {
+      this._weatherRequestRetryCount = 0;
 
       this._refresh( 0 );
-    })
+    } else {
+      super.log( "error", message, this.displayAddress );
+
+      this._sendWeatherEvent( RiseDataWeather.EVENT_DATA_ERROR, message );
+    }
   }
 
   _handleResponse( resp ) {
