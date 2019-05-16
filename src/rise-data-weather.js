@@ -5,10 +5,10 @@ import { timeOut } from "@polymer/polymer/lib/utils/async.js";
 import { Debouncer } from "@polymer/polymer/lib/utils/debounce.js";
 
 import { weatherServerConfig } from "./rise-data-weather-config.js";
-import { cache } from "./cache.js";
+import { CacheMixin } from "./cache-mixin.js";
 import { parseTinbu } from "./tinbu-parser.js";
 
-class RiseDataWeather extends cache( PolymerElement ) {
+class RiseDataWeather extends CacheMixin( PolymerElement ) {
 
   static get properties() {
     return {

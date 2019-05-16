@@ -49,13 +49,13 @@
 </script>
 
 <script type="module">
-  import * as cacheModule from '../../src/cache.js';
+  import * as cacheModule from '../../src/cache-mixin.js';
 
   suite("cache", () => {
     let cache, logger;
 
     setup(()=>{
-      let Cache = cacheModule.cache(class {});
+      let Cache = cacheModule.CacheMixin(class {});
       cache = new Cache();
 
       logger = cache.__proto__.__proto__;

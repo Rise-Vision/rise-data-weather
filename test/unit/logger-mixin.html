@@ -22,12 +22,12 @@
 </script>
 
 <script type="module">
-  import * as loggerModule from '../../src/logger.js';
+  import * as loggerModule from '../../src/logger-mixin.js';
 
   let logger;
 
   setup(()=>{
-    let Logger = loggerModule.logger(class {});
+    let Logger = loggerModule.LoggerMixin(class {});
     logger = new Logger();
 
     RisePlayerConfiguration.Logger.info = sinon.spy();
