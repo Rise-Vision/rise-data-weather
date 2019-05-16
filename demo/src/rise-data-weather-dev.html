@@ -24,7 +24,9 @@
     scale="F">
   </rise-data-weather>
 
+<h2 id="current-temp-C-location"></h2>
 <h1 id="current-temp-C"></h1>
+<h2 id="current-temp-F-location"></h2>
 <h1 id="current-temp-F"></h1>
 
 <ul id="log">
@@ -41,7 +43,8 @@
         callback({
           city: "Buffalo",
           province: "NY",
-          country: "US"
+          country: "US",
+          postalCode: 14202
         });
       }
     },
@@ -76,6 +79,8 @@
       log( "data update - " + elementId + " - " + evt.detail.observation.temperature );
       document.getElementById(demoElementId).innerHTML = evt.detail.observation.temperature 
         + " " + evt.detail.observation.temperature_scale;
+      document.getElementById(demoElementId + "-location").innerHTML = evt.detail.location.city_name 
+        + ", " + evt.detail.location.state_name + ", " + evt.detail.location.country_name;
     } );
 
     weatherElement.addEventListener( "data-error", ( evt ) => {
