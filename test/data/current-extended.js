@@ -20,6 +20,7 @@ export const currentExtendedXML = `<?xml version="1.0" encoding="UTF-8"?>
   </report>`,
 
   currentExtendedJSON = {
+    "reportDate": new Date( "Mon, 29 Apr 2019 13:10:12 EDT" ),
     "observation": {
       "city": "CYYZ",
       "city_name": "Toronto",

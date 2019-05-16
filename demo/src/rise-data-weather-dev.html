@@ -13,24 +13,33 @@
 <body>
 
   <rise-data-weather
-    id="rise-data-weather-01"
+    id="rise-data-weather-C"
     label="Weather Forecast"
     scale="C">
   </rise-data-weather>
 
-<h1 id="current-temp"></h1>
+  <rise-data-weather
+    id="rise-data-weather-F"
+    label="Weather Forecast"
+    scale="F">
+  </rise-data-weather>
+
+<h1 id="current-temp-C"></h1>
+<h1 id="current-temp-F"></h1>
 
 <ul id="log">
 </ul>
 
 <script>
   window.RisePlayerConfiguration = {
+    onDisplayAddressCallback: null,
     isConfigured: function(){return false},
     getDisplayId: function(){return 'DisplayID'},
     DisplayData: {
       onDisplayAddress: function(callback){
+        RisePlayerConfiguration.onDisplayAddressCallback = callback;
         callback({
-          city: "New York",
+          city: "Buffalo",
           province: "NY",
           country: "US"
         });
@@ -52,33 +61,35 @@
   }
 
   function _logFromLogger(componentData, event, details, additionalFields) {
-    log(event + " " + JSON.stringify(details));
+    log(event + " - " + componentData.id + " - " + JSON.stringify(details));
   }
 
-  function configureComponents() {
-    weather01 = document.querySelector('#rise-data-weather-01');
+  function configureComponents(elementId, demoElementId) {
+    var weatherElement = document.querySelector(elementId);
 
-    weather01.addEventListener( "configured", ( evt ) => {
-      log( "configured " + JSON.stringify(evt.detail) );
-      weather01.dispatchEvent( new Event('start') );
+    weatherElement.addEventListener( "configured", ( evt ) => {
+      log( "configured - " + elementId + " - " + JSON.stringify(evt.detail) );
+      weatherElement.dispatchEvent( new Event('start') );
     } );
 
-    weather01.addEventListener( "data-update", ( evt ) => {
-      log( "data update " + evt.detail.observation.temperature );
-      document.getElementById("current-temp").innerHTML = evt.detail.observation.temperature 
+    weatherElement.addEventListener( "data-update", ( evt ) => {
+      log( "data update - " + elementId + " - " + evt.detail.observation.temperature );
+      document.getElementById(demoElementId).innerHTML = evt.detail.observation.temperature 
         + " " + evt.detail.observation.temperature_scale;
     } );
 
-    weather01.addEventListener( "data-error", ( evt ) => {
-      log( "data-error " + evt.detail );
+    weatherElement.addEventListener( "data-error", ( evt ) => {
+      log( "data-error - " + elementId + " - " + evt.detail );
     } );
 
-    weather01.addEventListener( "request-error", ( evt ) => {
-      log( "request error " + evt.detail );
+    weatherElement.addEventListener( "request-error", ( evt ) => {
+      log( "request error - " + elementId + " - " + evt.detail );
     } );
 
   }
-  configureComponents();
+
+  configureComponents('#rise-data-weather-C', "current-temp-C");
+  configureComponents('#rise-data-weather-F', "current-temp-F");
 
   setTimeout(function() {
     window.dispatchEvent( new Event('rise-components-ready') );

@@ -1,0 +1,158 @@
+<!doctype html>
+
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <script src="../../node_modules/@webcomponents/webcomponentsjs/webcomponents-loader.js"></script>
+  <script src="../../node_modules/@polymer/test-fixture/test-fixture.js"></script>
+  <script src="../../node_modules/mocha/mocha.js"></script>
+  <script src="../../node_modules/chai/chai.js"></script>
+  <script src="../../node_modules/wct-mocha/wct-mocha.js"></script>
+  <script src="../../node_modules/sinon/pkg/sinon.js"></script>
+
+</head>
+<body>
+
+<script type="text/javascript">
+  RisePlayerConfiguration = {
+    Logger: {
+      info: () => {},
+      warning: () => {},
+      error: () => {}
+    }
+  };
+
+  const keys = ['key1','key2'];
+  var cachesOpen = { 
+    keys: sinon.stub().resolves(keys),
+    match: function(key) {
+      let resp = {
+        headers: {
+          get: function() {
+            if (key === 'key1') {
+              return new Date(); //valid cache
+            } else {
+              return new Date('1980-01-01'); //expired cache
+            }
+          }
+        }
+      };
+      return Promise.resolve(resp);
+    },
+    delete: sinon.spy(),
+    put: sinon.spy()
+  };
+  sinon.stub(caches, "open").resolves(cachesOpen);
+
+</script>
+
+<script type="module">
+  import * as cacheModule from '../../src/cache-mixin.js';
+
+  suite("cache", () => {
+    let cache, logger;
+
+    setup(()=>{
+      let Cache = cacheModule.CacheMixin(class {});
+      cache = new Cache();
+
+      logger = cache.__proto__.__proto__;
+      sinon.stub(logger, "log");
+    });
+
+    teardown(()=>{
+      caches.open.restore();
+      logger.log.restore();
+    });
+
+    suite("deleteExpiredCache", () => {
+      test( "should clear old cache entries", (done) => {
+        setTimeout(() => {
+          assert.isTrue( cachesOpen.delete.calledWith('key2'));
+
+          done();
+        }, 10);
+      });
+    });
+
+    suite("get", () => {
+      test( "should reject promise if key is not found", done => {
+        cachesOpen = { 
+          match: sinon.stub().resolves(null)
+        };
+        sinon.stub(caches, "open").resolves(cachesOpen);
+
+        cache.getCache().then(() => {
+          done("error");
+        }).catch(() => {
+          assert.isTrue(true);
+          done();          
+        });
+      });
+
+      test( "should send cached data if cache is valid", done => {
+        const validXmlData = "<report><observation temperature=\"12\"/><location/></report>",
+          cachedData = new Response(validXmlData,{headers:{date: new Date()}});
+        cachesOpen = { 
+          match: sinon.stub().resolves(cachedData)
+        };
+        sinon.stub(caches, "open").resolves(cachesOpen);
+      
+        cache.getCache().then( data => {
+          assert.equal( data, cachedData );
+
+          done();
+        }).catch( error => {
+          done(error);          
+        });
+      });
+      
+      test( "should delete expired cached data", done => {
+        const validXmlData = "<report><observation temperature=\"12\"/><location/></report>",
+          cachedData = new Response(validXmlData,{headers:{date: new Date('1980-01-01')}});
+        cachesOpen = { 
+          match: sinon.stub().resolves(cachedData),
+          delete: sinon.spy()
+        };
+        sinon.stub(caches, "open").resolves(cachesOpen);
+      
+        cache.getCache("url").then(() => {
+          done("error");
+        }).catch(() => {
+          assert.isTrue( cachesOpen.delete.called );
+
+          done();
+        });
+      });
+    });
+
+    suite("put", () => {
+      setup(() => {
+        cachesOpen = {
+          put: sinon.spy()
+        };
+        sinon.stub(caches, "open").resolves(cachesOpen);
+      });
+
+      test("should store url as key and the object", done => {
+        var res = {
+          url: "key3",
+          data: {}
+        }
+        cache.putCache( res );
+
+        setTimeout(() => {
+          assert.isTrue( cachesOpen.put.calledWith( 'key3', res ));
+
+          done();
+        }, 10);
+      });
+    });
+
+  });
+</script>
+
+</body>
+</html>
