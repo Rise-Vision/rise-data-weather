@@ -183,6 +183,15 @@
         assert.isTrue( element._refresh.called );
       } );
 
+      test( "should reset requestRetryCount count", () => {
+        element._weatherRequestRetryCount = 3;
+        sandbox.stub(element, "_refresh");
+
+        element._setDisplayAddress({city: "Toronto", country: "CA"});
+
+        assert.equal( element._weatherRequestRetryCount, 0 );
+      } );
+
       test( "should send an error event when fullAddress is not valid", () => {
         sandbox.stub(element, "_refresh");
         sandbox.stub(element, "_sendWeatherEvent");

@@ -199,6 +199,8 @@ class RiseDataWeather extends CacheMixin( PolymerElement ) {
     var message = "displayAddress is incomplete or missing";
 
     if ( this.fullAddress ) {
+      this._weatherRequestRetryCount = 0;
+
       this._refresh( 0 );
     } else {
       super.log( "error", message, this.displayAddress );
