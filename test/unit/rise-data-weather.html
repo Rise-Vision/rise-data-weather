@@ -28,8 +28,6 @@
   </script>
   <script src="../../src/rise-data-weather-config.js" type="module"></script>
   <script src="../../src/rise-data-weather.js" type="module"></script>
-  <script src="../../src/logger.js" type="module"></script>
-  <script src="../../src/cache.js" type="module"></script>
 
 </head>
 <body>
@@ -40,23 +38,22 @@
 </test-fixture>
 
 <script type="module">
-  import * as loggerModule from '../../src/logger.js';
-  import * as cacheModule from '../../src/cache.js';
-
-  let logger = loggerModule.logger;
-  let cache = cacheModule.cache;
 
   suite("rise-data-weather", () => {
     let sandbox = sinon.createSandbox();
     let element;
+    let cache, logger;
 
     setup(() => {
+      element = fixture("test-block");
+
+      cache = element.__proto__.__proto__;
+      logger = element.__proto__.__proto__.__proto__;
+
       sandbox.stub(logger, "init");
       sandbox.stub(logger, "log");
 
       sandbox.stub(window, "fetch");
-
-      element = fixture("test-block");
     });
 
     teardown(()=>{
@@ -169,7 +166,7 @@
 
     suite( "_getData", () => {
       test( "should get the result from cache", done => {
-        sandbox.stub(cache, "get").resolves({
+        sandbox.stub(cache, "getCache").resolves({
           text: () => {
             return Promise.resolve("text");
           }
@@ -180,7 +177,7 @@
         element._getData();
 
         setTimeout(() => {
-          assert.isTrue( cache.get.called );
+          assert.isTrue( cache.getCache.called );
           assert.isTrue( element._processData.called );
           assert.isTrue( element._processData.calledWith("text") );          
 
@@ -191,7 +188,7 @@
       });
 
       test( "should call API if cache is not available", done => {
-        sandbox.stub(cache, "get").rejects();
+        sandbox.stub(cache, "getCache").rejects();
         sandbox.stub(element, "_processData");
         sandbox.stub(element, "_requestData");
 
@@ -200,7 +197,7 @@
         element._getData();
 
         setTimeout(() => {
-          assert.isTrue( cache.get.called );
+          assert.isTrue( cache.getCache.called );
           assert.isFalse( element._processData.called );
 
           assert.isTrue( element._requestData.called );
@@ -220,22 +217,22 @@
       });
 
       test( "should cache requests", done => {
-        sandbox.stub(cache, "get").rejects();
-        sandbox.stub(cache, "put").resolves();
+        sandbox.stub(cache, "getCache").rejects();
+        sandbox.stub(cache, "putCache").resolves();
         window.fetch.resolves(response);
       
         element._requestData();
 
         setTimeout(() => {
-          assert.isTrue( cache.put.called );
+          assert.isTrue( cache.putCache.called );
 
           done();
         }, 10);
       });
 
       test( "should process data on successful requests", done => {
-        sandbox.stub(cache, "get").rejects();
-        sandbox.stub(cache, "put").resolves();
+        sandbox.stub(cache, "getCache").rejects();
+        sandbox.stub(cache, "putCache").resolves();
         window.fetch.resolves(response);
 
         sandbox.stub(element, "_processData");
@@ -251,7 +248,7 @@
       });
 
       test( "should handle request failures", done => {
-        sandbox.stub(cache, "get").rejects();
+        sandbox.stub(cache, "getCache").rejects();
 
         window.fetch.rejects("dsa");
       
@@ -375,8 +372,8 @@
       });
 
       test( "should make a request and send data-update", done => {
-        sandbox.stub(cache, "get").rejects();
-        sandbox.stub(cache, "put").resolves();
+        sandbox.stub(cache, "getCache").rejects();
+        sandbox.stub(cache, "putCache").resolves();
         window.fetch.resolves(response);
 
         element.addEventListener("data-update", () => {
@@ -388,8 +385,8 @@
       });
 
       test( "should not send data-update if returned data has the same timestamp", done => {
-        sandbox.stub(cache, "get").rejects();
-        sandbox.stub(cache, "put").resolves();
+        sandbox.stub(cache, "getCache").rejects();
+        sandbox.stub(cache, "putCache").resolves();
         window.fetch.resolves(response);
 
         sandbox.stub(element, "_sendWeatherEvent");
@@ -408,8 +405,8 @@
       });
 
       test( "should send data-update if returned data has a different timestamp", done => {
-        sandbox.stub(cache, "get").rejects();
-        sandbox.stub(cache, "put").resolves();
+        sandbox.stub(cache, "getCache").rejects();
+        sandbox.stub(cache, "putCache").resolves();
         window.fetch.resolves(response);
 
         sandbox.stub(element, "_sendWeatherEvent");
@@ -428,8 +425,8 @@
       });
 
       test( "should enqueue next request for 1 hour", done => {
-        sandbox.stub(cache, "get").rejects();
-        sandbox.stub(cache, "put").resolves();
+        sandbox.stub(cache, "getCache").rejects();
+        sandbox.stub(cache, "putCache").resolves();
         sandbox.stub(element, "_refresh");
 
         window.fetch.resolves(response);

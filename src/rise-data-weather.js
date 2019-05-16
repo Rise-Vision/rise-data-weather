@@ -5,11 +5,10 @@ import { timeOut } from "@polymer/polymer/lib/utils/async.js";
 import { Debouncer } from "@polymer/polymer/lib/utils/debounce.js";
 
 import { weatherServerConfig } from "./rise-data-weather-config.js";
-import { logger } from "./logger.js";
 import { cache } from "./cache.js";
 import { parseTinbu } from "./tinbu-parser.js";
 
-class RiseDataWeather extends PolymerElement {
+class RiseDataWeather extends cache( PolymerElement ) {
 
   static get properties() {
     return {
@@ -119,7 +118,7 @@ class RiseDataWeather extends PolymerElement {
   }
 
   _init() {
-    logger.init( this.id );
+    super.init( this.id );
 
     this.addEventListener( RiseDataWeather.EVENT_START, this._handleStart, { once: true });
 
@@ -157,14 +156,14 @@ class RiseDataWeather extends PolymerElement {
     }).then( res => {
       this._handleResponse( res.clone());
 
-      cache.put( res );
+      super.putCache( res );
     }).catch( this._handleFetchError.bind( this ));
   }
 
   _getData() {
     let url = this._getUrl();
 
-    cache.get( url ).then( response => {
+    super.getCache( url ).then( response => {
       response.text().then( this._processData.bind( this ));
     }).catch(() => {
       this._requestData();
@@ -199,7 +198,7 @@ class RiseDataWeather extends PolymerElement {
 
   _handleResponse( resp ) {
     // NOTE: resp.body is a blank object
-    logger.log( "info", "response received", { response: resp.body });
+    super.log( "info", "response received", { response: resp.body });
 
     resp.text().then( this._processData.bind( this ));
   }
@@ -212,7 +211,7 @@ class RiseDataWeather extends PolymerElement {
     } else {
       this._weatherRequestRetryCount = 0;
 
-      logger.log( "error", "request error" );
+      super.log( "error", "request error" );
       this._sendWeatherEvent( RiseDataWeather.EVENT_REQUEST_ERROR );
 
       this._refresh( RiseDataWeather.FETCH_CONFIG.COOLDOWN );
