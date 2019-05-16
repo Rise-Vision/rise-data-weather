@@ -1,7 +1,7 @@
-import { dedupingMixin } from '../node_modules/@polymer/polymer/lib/utils/mixin.js';
+import { dedupingMixin } from "../node_modules/@polymer/polymer/lib/utils/mixin.js";
 import { version } from "./rise-data-weather-version.js";
 
-export const LoggerMixin = dedupingMixin(base => {
+export const LoggerMixin = dedupingMixin( base => {
   class Logger extends base {
     constructor() {
       super();

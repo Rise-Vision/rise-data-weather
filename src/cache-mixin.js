@@ -1,12 +1,12 @@
-import { dedupingMixin } from '../node_modules/@polymer/polymer/lib/utils/mixin.js';
+import { dedupingMixin } from "../node_modules/@polymer/polymer/lib/utils/mixin.js";
 import { LoggerMixin } from "./logger-mixin.js";
 
-export const CacheMixin = dedupingMixin(base => {
+export const CacheMixin = dedupingMixin( base => {
   const CACHE_CONFIG = {
-    CACHE_NAME: "rise-data-weather",
-    CACHE_DURATION: 1000 * 60 * 60 * 2,
-  },
-  cacheBase = LoggerMixin(base);
+      CACHE_NAME: "rise-data-weather",
+      CACHE_DURATION: 1000 * 60 * 60 * 2,
+    },
+    cacheBase = LoggerMixin( base );
 
   class Cache extends cacheBase {
     constructor() {
@@ -45,7 +45,7 @@ export const CacheMixin = dedupingMixin(base => {
       this._getCache().then( cache => {
         return cache.put( res.url, res );
       }).catch( err => {
-        super.log( "warning", "cache put failed", { url: res.url }, err);
+        super.log( "warning", "cache put failed", { url: res.url }, err );
       });
     }
 
