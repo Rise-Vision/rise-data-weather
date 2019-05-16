@@ -145,6 +145,7 @@
         element.dispatchEvent( new CustomEvent( "start" ) );
       
         assert.isTrue( RisePlayerConfiguration.DisplayData.onDisplayAddress.called );
+        assert.deepEqual( logger.log.getCall(0).args, ["info", "start received"] );
       } );
       
       test( "should update displayAddress", () => {
@@ -301,6 +302,8 @@
           assert.isTrue( element._refresh.called );
           assert.isTrue( element._refresh.calledWith(1000 * 60 * 10) );
 
+          assert.deepEqual( logger.log.getCall(0).args, ["error", "request error", {error: null}] );
+
         });
 
         test( "should raise 'request-error' on request failures", done => {
@@ -310,11 +313,13 @@
         
           element.addEventListener("request-error", evt => {
             assert.isTrue(true);
+
+            assert.deepEqual(logger.log.getCall(0).args, ["error", "request error", {error: "error"}]);
         
             done();
           });
         
-          element._handleFetchError();
+          element._handleFetchError( new Error("error") );
         });
 
         test( "should debounce existing cooldown", () => {
@@ -368,10 +373,27 @@
 
         element.addEventListener("data-update", () => {
           assert.isTrue(true);
+
+          assert.deepEqual(logger.log.getCall(0).args, ["info", "data update"]);
           done();
         });
       
         element._requestData();
+      });
+
+      test( "should log data-update only once", () => {
+        element._processData(validXmlData);
+
+        assert.isTrue(logger.log.calledOnce);
+        assert.deepEqual(logger.log.getCall(0).args, ["info", "data update"]);
+
+        element._processData("<report><observation temperature=\"12\"/><location/></report>");
+
+        assert.isFalse(logger.log.calledTwice);
+
+        element._processData("<report><observation temperature=\"13\"/><location/></report>");
+        
+        assert.isFalse(logger.log.calledTwice);
       });
 
       test( "should not send data-update if returned data has the same timestamp", done => {
@@ -389,6 +411,8 @@
 
         setTimeout(() => {
           assert.isFalse( element._sendWeatherEvent.called );
+
+          assert.isFalse(logger.log.called);
 
           done();            
         }, 10);
@@ -436,11 +460,13 @@
       test( "should raise 'data-error' on invalid data", done => {
         window.fetch.resolves(new Response("<invalid/>",{headers:{date: new Date()}}));
       
-        const cache = { match: sandbox.stub().resolves(null) };
+        const cache = { match: sandbox.stub().resolves(null), put: sandbox.stub() };
         sandbox.stub(caches, "open").resolves(cache);      
       
         element.addEventListener("data-error", evt => {
           assert.isTrue(true);
+
+          assert.deepEqual( logger.log.getCall(0).args, ["error", "data error", {error: "Invalid weather report (Error: Report data is missing)."}] );
       
           done();
         });

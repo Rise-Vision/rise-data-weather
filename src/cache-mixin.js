@@ -57,22 +57,17 @@ export const CacheMixin = dedupingMixin( base => {
         return cache.match( url );
       }).then( response => {
         if ( response ) {
-          super.log( "info", "found in cache", { url: url });
-
           const date = new Date( response.headers.get( "date" ));
 
           if ( Date.now() < date.getTime() + CACHE_CONFIG.CACHE_DURATION ) {
             return Promise.resolve( response );
 
           } else {
-            super.log( "info", "removing old cache entry", { url: url });
             _cache.delete( url );
 
             return Promise.reject();
           }
         } else {
-          super.log( "info", "not cached", { url: url });
-
           return Promise.reject();
         }
       });
