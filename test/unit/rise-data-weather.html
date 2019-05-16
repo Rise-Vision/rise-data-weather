@@ -106,10 +106,6 @@
         stub = sandbox.stub( window, "addEventListener" );
       });
 
-      teardown(()=>{
-        stub.restore();
-      });
-
       test( "should listen for rise-components-ready and call init", () => {
         element.ready();
         assert.isTrue( stub.calledWith('rise-components-ready') );
@@ -123,8 +119,6 @@
 
         assert.isTrue( element._init.calledOnce );
         assert.isFalse( stub.calledOnce );
-
-        element._init.restore();
       });
     });
 
@@ -134,8 +128,6 @@
 
         element._init();
         assert.isTrue(element.addEventListener.calledWith( "start" ));
-
-        element.addEventListener.restore();
       });
 
       test( "should raise 'configured' event", () => {
@@ -143,8 +135,6 @@
 
         element._init();
         assert.equal(element.dispatchEvent.getCall(0).args[0].type, "configured");
-
-        element.dispatchEvent.restore();
       });
     });
 
@@ -452,8 +442,26 @@
         element.addEventListener("data-error", evt => {
           assert.isTrue(true);
       
-          caches.open.restore();
           done();
+        });
+      
+        element._requestData();
+      });
+
+      test( "should enqueue next refresh on invalid data", done => {
+        window.fetch.resolves(new Response("<invalid/>",{headers:{date: new Date()}}));
+        sandbox.stub(element, "_refresh");
+      
+        const cache = { match: sandbox.stub().resolves(null) };
+        sandbox.stub(caches, "open").resolves(cache);      
+      
+        element.addEventListener("data-error", evt => {
+          setTimeout(() => {
+            assert.isTrue( element._refresh.called );
+            assert.isTrue( element._refresh.calledWith(60 * 60 * 1000));
+
+            done();            
+          }, 10);
         });
       
         element._requestData();

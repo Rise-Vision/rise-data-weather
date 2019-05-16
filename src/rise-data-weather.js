@@ -181,11 +181,11 @@ class RiseDataWeather extends cache( PolymerElement ) {
 
         this._sendWeatherEvent( RiseDataWeather.EVENT_DATA_UPDATE, this.weatherData );
       }
-
-      this._refresh( RiseDataWeather.FETCH_CONFIG.REFRESH );
     } catch ( e ) {
       this._sendWeatherEvent( RiseDataWeather.EVENT_DATA_ERROR, e );
     }
+
+    this._refresh( RiseDataWeather.FETCH_CONFIG.REFRESH );
   }
 
   _handleStart() {
