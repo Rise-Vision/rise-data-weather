@@ -103,7 +103,7 @@ class RiseDataWeather extends CacheMixin( PolymerElement ) {
 
     this._weatherRequestRetryCount = 0;
     this._refreshDebounceJob = null;
-    this._logDataUpdate = true;
+    this._logDataReceived = true;
   }
 
   ready() {
@@ -155,6 +155,7 @@ class RiseDataWeather extends CacheMixin( PolymerElement ) {
     fetch( this._getUrl(), {
       headers: { "X-Requested-With": "rise-data-weather" }
     }).then( res => {
+      this._logData( false );
       this._handleResponse( res.clone());
 
       super.putCache( res );
@@ -165,10 +166,18 @@ class RiseDataWeather extends CacheMixin( PolymerElement ) {
     let url = this._getUrl();
 
     super.getCache( url ).then( response => {
+      this._logData( true );
       response.text().then( this._processData.bind( this ));
     }).catch(() => {
       this._requestData();
     });
+  }
+
+  _logData( cached ) {
+    if ( this._logDataReceived ) {
+      this._logDataReceived = false;
+      super.log( "info", "data received", { cached });
+    }
   }
 
   _processData( content ) {
@@ -179,11 +188,6 @@ class RiseDataWeather extends CacheMixin( PolymerElement ) {
 
       if ( !( this.weatherData && this.weatherData.reportDate ) || this.weatherData.reportDate.getTime() !== data.reportDate.getTime()) {
         this._setWeatherData( data );
-
-        if ( this._logDataUpdate ) {
-          this._logDataUpdate = false;
-          super.log( "info", "data update" );
-        }
 
         this._sendWeatherEvent( RiseDataWeather.EVENT_DATA_UPDATE, this.weatherData );
       }

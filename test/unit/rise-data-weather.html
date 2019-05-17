@@ -374,26 +374,57 @@
         element.addEventListener("data-update", () => {
           assert.isTrue(true);
 
-          assert.deepEqual(logger.log.getCall(0).args, ["info", "data update"]);
           done();
         });
       
         element._requestData();
       });
 
-      test( "should log data-update only once", () => {
-        element._processData(validXmlData);
+      test( "should log data received only once for not cached requests", done => {
+        sandbox.stub(cache, "getCache").rejects();
+        sandbox.stub(cache, "putCache").resolves();
+        window.fetch.resolves(response);
 
-        assert.isTrue(logger.log.calledOnce);
-        assert.deepEqual(logger.log.getCall(0).args, ["info", "data update"]);
+        element._getData(validXmlData);
 
-        element._processData("<report><observation temperature=\"12\"/><location/></report>");
+        setTimeout(() => {
+          assert.isTrue(logger.log.calledOnce);
+          assert.deepEqual(logger.log.getCall(0).args, ["info", "data received",{cached: false}]);
 
-        assert.isFalse(logger.log.calledTwice);
+          element._getData(validXmlData);
 
-        element._processData("<report><observation temperature=\"13\"/><location/></report>");
-        
-        assert.isFalse(logger.log.calledTwice);
+          setTimeout(() => {
+            assert.isFalse(logger.log.calledTwice);
+
+            done();
+          },10);
+
+        },10);
+      });
+
+      test( "should log data received only once for cached requests", done => {
+        sandbox.stub(cache, "getCache").resolves({
+          text: () => {
+            return Promise.resolve("text");
+          }
+        });
+        sandbox.stub(element, "_processData");
+        sandbox.stub(element, "_requestData");
+
+        element._getData();
+
+        setTimeout(() => {
+          assert.isTrue(logger.log.calledOnce);
+          assert.deepEqual(logger.log.getCall(0).args, ["info", "data received",{cached: true}]);
+
+          element._getData(validXmlData);
+
+          setTimeout(() => {
+            assert.isFalse(logger.log.calledTwice);
+
+            done();
+          }, 10);
+        }, 10);    
       });
 
       test( "should not send data-update if returned data has the same timestamp", done => {
@@ -411,8 +442,6 @@
 
         setTimeout(() => {
           assert.isFalse( element._sendWeatherEvent.called );
-
-          assert.isFalse(logger.log.called);
 
           done();            
         }, 10);
@@ -466,7 +495,9 @@
         element.addEventListener("data-error", evt => {
           assert.isTrue(true);
 
-          assert.deepEqual( logger.log.getCall(0).args, ["error", "data error", {error: "Invalid weather report (Error: Report data is missing)."}] );
+          assert.isTrue( logger.log.calledTwice );
+          assert.deepEqual( logger.log.getCall(0).args, ["info", "data received", {cached: false}] );
+          assert.deepEqual( logger.log.getCall(1).args, ["error", "data error", {error: "Invalid weather report (Error: Report data is missing)."}] );
       
           done();
         });
