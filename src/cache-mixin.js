@@ -16,7 +16,7 @@ export const CacheMixin = dedupingMixin( base => {
     }
 
     _getCache() {
-      if ( caches && caches.open ) {
+      if ( window.caches && window.caches.open ) {
         return caches.open( CACHE_CONFIG.CACHE_NAME );
       } else {
         super.log( "warning", "cache API not available" );
