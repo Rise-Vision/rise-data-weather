@@ -104,6 +104,7 @@ class RiseDataWeather extends CacheMixin( PolymerElement ) {
 
     this._weatherRequestRetryCount = 0;
     this._refreshDebounceJob = null;
+    this._logDataReceived = true;
   }
 
   ready() {
@@ -155,6 +156,7 @@ class RiseDataWeather extends CacheMixin( PolymerElement ) {
     fetch( this._getUrl(), {
       headers: { "X-Requested-With": "rise-data-weather" }
     }).then( res => {
+      this._logData( false );
       this._handleResponse( res.clone());
 
       super.putCache( res );
@@ -165,10 +167,18 @@ class RiseDataWeather extends CacheMixin( PolymerElement ) {
     let url = this._getUrl();
 
     super.getCache( url ).then( response => {
+      this._logData( true );
       response.text().then( this._processData.bind( this ));
     }).catch(() => {
       this._requestData();
     });
+  }
+
+  _logData( cached ) {
+    if ( this._logDataReceived ) {
+      this._logDataReceived = false;
+      super.log( "info", "data received", { cached });
+    }
   }
 
   _processData( content ) {
@@ -183,6 +193,8 @@ class RiseDataWeather extends CacheMixin( PolymerElement ) {
         this._sendWeatherEvent( RiseDataWeather.EVENT_DATA_UPDATE, this.weatherData );
       }
     } catch ( e ) {
+      super.log( "error", "data error", { error: e.message });
+
       this._sendWeatherEvent( RiseDataWeather.EVENT_DATA_ERROR, e );
     }
 
@@ -190,6 +202,8 @@ class RiseDataWeather extends CacheMixin( PolymerElement ) {
   }
 
   _handleStart() {
+    super.log( "info", "start received" );
+
     RisePlayerConfiguration.DisplayData.onDisplayAddress(( displayAddress ) => {
       this._setDisplayAddress( displayAddress );
     });
@@ -210,13 +224,10 @@ class RiseDataWeather extends CacheMixin( PolymerElement ) {
   }
 
   _handleResponse( resp ) {
-    // NOTE: resp.body is a blank object
-    super.log( "info", "response received", { response: resp.body });
-
     resp.text().then( this._processData.bind( this ));
   }
 
-  _handleFetchError() {
+  _handleFetchError( err ) {
     if ( this._weatherRequestRetryCount < RiseDataWeather.FETCH_CONFIG.COUNT ) {
       this._weatherRequestRetryCount += 1;
 
@@ -224,7 +235,7 @@ class RiseDataWeather extends CacheMixin( PolymerElement ) {
     } else {
       this._weatherRequestRetryCount = 0;
 
-      super.log( "error", "request error" );
+      super.log( "error", "request error", { error: err ? err.message : null });
       this._sendWeatherEvent( RiseDataWeather.EVENT_REQUEST_ERROR );
 
       this._refresh( RiseDataWeather.FETCH_CONFIG.COOLDOWN );

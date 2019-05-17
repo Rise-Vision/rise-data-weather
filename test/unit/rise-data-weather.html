@@ -157,6 +157,7 @@
         element.dispatchEvent( new CustomEvent( "start" ) );
       
         assert.isTrue( RisePlayerConfiguration.DisplayData.onDisplayAddress.called );
+        assert.deepEqual( logger.log.getCall(0).args, ["info", "start received"] );
       } );
       
       test( "should update displayAddress", () => {
@@ -351,6 +352,8 @@
           assert.isTrue( element._refresh.called );
           assert.isTrue( element._refresh.calledWith(1000 * 60 * 10) );
 
+          assert.deepEqual( logger.log.getCall(0).args, ["error", "request error", {error: null}] );
+
         });
 
         test( "should raise 'request-error' on request failures", done => {
@@ -360,11 +363,13 @@
         
           element.addEventListener("request-error", evt => {
             assert.isTrue(true);
+
+            assert.deepEqual(logger.log.getCall(0).args, ["error", "request error", {error: "error"}]);
         
             done();
           });
         
-          element._handleFetchError();
+          element._handleFetchError( new Error("error") );
         });
 
         test( "should debounce existing cooldown", () => {
@@ -418,10 +423,58 @@
 
         element.addEventListener("data-update", () => {
           assert.isTrue(true);
+
           done();
         });
       
         element._requestData();
+      });
+
+      test( "should log data received only once for not cached requests", done => {
+        sandbox.stub(cache, "getCache").rejects();
+        sandbox.stub(cache, "putCache").resolves();
+        window.fetch.resolves(response);
+
+        element._getData(validXmlData);
+
+        setTimeout(() => {
+          assert.isTrue(logger.log.calledOnce);
+          assert.deepEqual(logger.log.getCall(0).args, ["info", "data received",{cached: false}]);
+
+          element._getData(validXmlData);
+
+          setTimeout(() => {
+            assert.isFalse(logger.log.calledTwice);
+
+            done();
+          },10);
+
+        },10);
+      });
+
+      test( "should log data received only once for cached requests", done => {
+        sandbox.stub(cache, "getCache").resolves({
+          text: () => {
+            return Promise.resolve("text");
+          }
+        });
+        sandbox.stub(element, "_processData");
+        sandbox.stub(element, "_requestData");
+
+        element._getData();
+
+        setTimeout(() => {
+          assert.isTrue(logger.log.calledOnce);
+          assert.deepEqual(logger.log.getCall(0).args, ["info", "data received",{cached: true}]);
+
+          element._getData(validXmlData);
+
+          setTimeout(() => {
+            assert.isFalse(logger.log.calledTwice);
+
+            done();
+          }, 10);
+        }, 10);    
       });
 
       test( "should not send data-update if returned data has the same timestamp", done => {
@@ -486,11 +539,15 @@
       test( "should raise 'data-error' on invalid data", done => {
         window.fetch.resolves(new Response("<invalid/>",{headers:{date: new Date()}}));
       
-        const cache = { match: sandbox.stub().resolves(null) };
+        const cache = { match: sandbox.stub().resolves(null), put: sandbox.stub() };
         sandbox.stub(caches, "open").resolves(cache);      
       
         element.addEventListener("data-error", evt => {
           assert.isTrue(true);
+
+          assert.isTrue( logger.log.calledTwice );
+          assert.deepEqual( logger.log.getCall(0).args, ["info", "data received", {cached: false}] );
+          assert.deepEqual( logger.log.getCall(1).args, ["error", "data error", {error: "Invalid weather report (Error: Report data is missing)."}] );
       
           done();
         });
