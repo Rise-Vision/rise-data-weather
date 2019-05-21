@@ -47,7 +47,8 @@ The below illustrates simple usage of the component and listening to the `rise-c
 
     <rise-data-weather
       id="weather01"
-      ** TODO **
+      label="Weather"
+      scale="C"
     </rise-data-weather>
 ...
 
@@ -58,7 +59,107 @@ The below illustrates simple usage of the component and listening to the `rise-c
 
 When listening for the "data-update" event, the `event.detail` object returned is an object of the following format:
 
-** TODO **
+```
+{
+   "observation":
+    {
+       "city": "CYTZ",
+       "city_name": "Toronto Island Airport",
+       "location": "Toronto Island Airport",
+       "latitude": "43.6275",
+       "longitude": "-79.3962",
+       "state": "ON",
+       "state_name": "Ontario",
+       "country": "CA",
+       "iso_cc": "CA",
+       "country_name": "Canada",
+       "daylight": "D",
+       "sky_desc": "14",
+       "sky": "Partly sunny",
+       "precip_desc": "*",
+       "precip": "",
+       "temp_desc": "5",
+       "temp": "Quite cool",
+       "air_desc": "*",
+       "air": "",
+       "description": "Partly sunny. Quite cool.",
+       "temperature": "41.00",
+       "temperature_scale": "F",
+       "wind_speed": "20.68",
+       "wind_dir": "70",
+       "wind_short": "E",
+       "wind_long": "East",
+       "humidity": "70",
+       "dew_point": "32.00",
+       "comfort": "31.59",
+       "baro_pressure": "30.36",
+       "baro_tendency": "*",
+       "barometer": "",
+       "visibility": "9.00",
+       "icon": "6",
+       "icon_name": "mostly_cloudy",
+       "iso8601": "2019-04-29T12:00:00.00-04:00"
+   },
+   "location": {
+      "city": "54356",
+      "city_name": "Toronto",
+      "latitude": "43.66",
+      "longitude": "-79.4",
+      "location": "Toronto",
+      "state": "ON",
+      "state_name": "Ontario",
+      "country": "CA",
+      "iso_cc": "CA",
+      "country_name": "Canada",
+      "forecast": [
+         {
+            "day_sequence": "1",
+            "day_of_week": "2",
+            "weekday": "Monday",
+            "daylight": "D",
+            "date": "042919",
+            "iso8601": "2019-04-29T00:00:00.00-04:00",
+            "high_temp": "43.88",
+            "low_temp": "34.88",
+            "temperature_scale": "F",
+            "sky_desc": "26",
+            "sky": "Increasing cloudiness",
+            "precip_desc": "66",
+            "precip": "Rain late",
+            "temp_desc": "4",
+            "temp": "Chilly",
+            "air_desc": "13",
+            "air": "Breezy",
+            "description": "Rain late. Increasing cloudiness. Chilly.",
+            "uv_index": "0",
+            "uv": "Minimal",
+            "wind_speed": "17.35",
+            "wind_dir": "80",
+            "wind_short": "E",
+            "wind_long": "East",
+            "humidity": "57",
+            "dew_point": "27.34",
+            "comfort": "32.99",
+            "rainfall": "0.28",
+            "snowfall": "*",
+            "precip_prob": "45",
+            "icon": "19",
+            "icon_name": "rain",
+            "beaufort": "4",
+            "beaufort_desc": "Moderate breeze",
+            "baro_pressure": "30.12"
+         },
+         { "day_sequence": "2", ... },
+         { "day_sequence": "3", ... },
+         { "day_sequence": "4", ... },
+         { "day_sequence": "5", ... },
+         { "day_sequence": "6", ... },
+         { "day_sequence": "7", ... }
+      ]
+   }
+}
+
+```
 
 ### Labels
 
@@ -74,26 +175,29 @@ This attribute holds a literal value, for example:
   </rise-data-weather>
 ```
 
-If it's not set, the label for the component defaults to "weather", which is applied via the    [generate_blueprint.js](https://github.com/Rise-Vision/html-template-library/blob/master/generate_blueprint.js) file for a HTML Template build/deployment.
+If it's not set, the label for the component defaults to "Weather", which is applied via the [generate_blueprint.js](https://github.com/Rise-Vision/html-template-library/blob/master/generate_blueprint.js) file for a HTML Template build/deployment.
 
 ### Attributes
 
 This component receives the following list of attributes:
 
-** TODO **
+- **id** ( string / required ): Unique HTML id with format 'rise-data-weather-<NAME_OR_NUMBER>'.
+- **label** ( string ): An optional label key for the text that will appear in the template editor. See 'Labels' section above.
+- **scale** (string) “F”/ “C”. Sets Fahrenheit or Celsius as temperature scale. Defaults to “F”.
+- **non-editable** ( empty / optional ): If present, it indicates this component is not available for customization in the template editor.
 
 ### Events
 
 The component sends the following events:
 
 - **_configured_**: The component has initialized what it requires to and is ready to handle a _start_ event.
-- **_data-update_**: Data has been retrieved and the data object is provided in `event.detail`
-- **_data-error_**: The weather server responded with a Error and the object is provided in `event.detail`
-- **_request-error_**: There was a problem making the JSONP request to weather server and the message object is provided in `event.detail`.
+- **_data-update_**: Data has been retrieved and the data object is provided in `event.detail`.
+- **_data-error_**: The weather data provider responded with an Error and the object is provided in `event.detail`.
+- **_request-error_**: There was a problem making the request to the weather data provider and the message object is provided in `event.detail`.
 
-The component is listening for the following events:
+The component listens for the following events:
 
-- **_start_**: This event will initiate getting data from weather server. It can be dispatched on the component when _configured_ event has been fired as that event indicates the component has initialized what it requires to and is ready to make a request to the weather server to retrieve data.
+- **_start_**: This event will initiate getting data from weather data provider. It can be dispatched to the component when configured event has been fired as that event indicates the component has initialized what it requires and is ready to make a request to the weather data provider.
 
 ### Errors
 
@@ -101,9 +205,34 @@ The component may log the following errors:
 
 - **_request-error_**: There was a problem making the request to weather server.
 - **_data-error_**: The weather server responded with an error.
-- **_Display is not permissioned to show weather.
 
 In every case, examine event-details entry and the other event fields for more information about the problem.
+
+### Component Lifecycle
+
+Once configured, the component will wait for the `start` event before requesting data and start sending events.
+
+On `start` event received, if a non-expired cached data is available the component will immediately send a `data-update` event and wait `2 hours` to trigger a new data refresh.
+
+To refresh the weather data, the component will request the data from the provider with a `60 seconds timeout` and will retry it `5 times`. Failing to receive a response, a `request-error` event will be fired and the component will wait `10 minutes` before trying to refresh the data again.
+
+After the data is retrieved, the component will parse it, update the cache and send `data-update` event. In case of data inconsistencies, it will raise a `data-error` event.
+
+### Caching Mechanism
+
+For caching the weather data responses, the component uses browsers Cache API. 
+
+Whenever the cached data is retrieved, the component checks the date header and delete it from cache in case it is expired. Also, to prevent cache from growing indefinitely, during component initialization all expired cache entries are deleted.
+
+### Weather Data Provider (Tinbu API) Requests
+
+Currently, Weather Component uses the wx_current_extended API from Tinbu. It provides current weather and 7 days forecast from a single request.
+
+#### Location
+On a real Display, the API is called using the location provided by the Display address (city, state, country) configured in the Display Settings page via RisePlayerConfiguration object. If address is not available, it will fallback to the Display’s zip code, when provided. 
+  
+In Preview, Company address is going to be used, following the same approach.
+
 
 ## Built With
 - [Polymer 3](https://www.polymer-project.org/)
