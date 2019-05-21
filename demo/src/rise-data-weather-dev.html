@@ -70,6 +70,11 @@
   function configureComponents(elementId, demoElementId) {
     var weatherElement = document.querySelector(elementId);
 
+    var _populateUi = function(temperature, location) {
+      document.getElementById(demoElementId).innerHTML = temperature;
+      document.getElementById(demoElementId + "-location").innerHTML = location;
+    };
+
     weatherElement.addEventListener( "configured", ( evt ) => {
       log( "configured - " + elementId + " - " + JSON.stringify(evt.detail) );
       weatherElement.dispatchEvent( new Event('start') );
@@ -77,18 +82,22 @@
 
     weatherElement.addEventListener( "data-update", ( evt ) => {
       log( "data update - " + elementId + " - " + evt.detail.observation.temperature );
-      document.getElementById(demoElementId).innerHTML = evt.detail.observation.temperature 
-        + " " + evt.detail.observation.temperature_scale;
-      document.getElementById(demoElementId + "-location").innerHTML = evt.detail.location.city_name 
-        + ", " + evt.detail.location.state_name + ", " + evt.detail.location.country_name;
+      var temperature = evt.detail.observation.temperature + " " + evt.detail.observation.temperature_scale;
+      var location = evt.detail.location.city_name + ", " + evt.detail.location.state_name + ", " + evt.detail.location.country_name;
+
+      _populateUi(temperature, location);
     } );
 
     weatherElement.addEventListener( "data-error", ( evt ) => {
       log( "data-error - " + elementId + " - " + evt.detail );
+
+      _populateUi("data-error", evt.detail);
     } );
 
     weatherElement.addEventListener( "request-error", ( evt ) => {
       log( "request error - " + elementId + " - " + evt.detail );
+
+      _populateUi("request-error", evt.detail);
     } );
 
   }

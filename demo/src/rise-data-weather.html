@@ -34,16 +34,30 @@
 <body>
 
   <rise-data-weather
-    id="rise-data-weather-01"
+    id="rise-data-weather-C"
     label="Weather Forecast"
-
-    >
+    scale="C">
   </rise-data-weather>
+
+  <rise-data-weather
+    id="rise-data-weather-F"
+    label="Weather Forecast"
+    scale="F">
+  </rise-data-weather>
+
+  <h2 id="current-temp-C-location"></h2>
+  <h1 id="current-temp-C"></h1>
+  <h2 id="current-temp-F-location"></h2>
+  <h1 id="current-temp-F"></h1>
 
   <ul id="log">
   </ul>
 
   <script>
+    window.RisePlayerConfiguration.Logger.info = _logFromLogger,
+    window.RisePlayerConfiguration.Logger.warning = _logFromLogger,
+    window.RisePlayerConfiguration.Logger.info = _logFromLogger;
+
     function log(text) {
       console.log(text);
       var ul = document.getElementById("log");
@@ -52,27 +66,48 @@
       ul.appendChild(li);
     }
 
+    function _logFromLogger(componentData, event, details, additionalFields) {
+      log(event + " - " + componentData.id + " - " + JSON.stringify(details));
+    }
+
+    function _configureComponents(elementId, demoElementId) {
+      var weatherElement = document.querySelector(elementId);
+
+      var _populateUi = function(temperature, location) {
+        document.getElementById(demoElementId).innerHTML = temperature;
+        document.getElementById(demoElementId + "-location").innerHTML = location;
+      };
+
+      weatherElement.addEventListener( "configured", ( evt ) => {
+        log( "configured - " + elementId + " - " + JSON.stringify(evt.detail) );
+        weatherElement.dispatchEvent( new Event('start') );
+      } );
+
+      weatherElement.addEventListener( "data-update", ( evt ) => {
+        log( "data update - " + elementId + " - " + evt.detail.observation.temperature );
+        var temperature = evt.detail.observation.temperature + " " + evt.detail.observation.temperature_scale;
+        var location = evt.detail.location.city_name + ", " + evt.detail.location.state_name + ", " + evt.detail.location.country_name;
+
+        _populateUi(temperature, location);
+      } );
+
+      weatherElement.addEventListener( "data-error", ( evt ) => {
+        log( "data-error - " + elementId + " - " + evt.detail );
+
+        _populateUi("data-error", evt.detail);
+      } );
+
+      weatherElement.addEventListener( "request-error", ( evt ) => {
+        log( "request error - " + elementId + " - " + evt.detail );
+
+        _populateUi("request-error", evt.detail);
+      } );
+
+    }
+
     function configureComponents() {
-      const start = new CustomEvent( "start" ),
-        weather01 = document.querySelector('#rise-data-weather-01');
-
-      weather01.addEventListener( "data-update", ( evt ) => {
-        console.log( "data update", JSON.stringify(evt.detail.observation.temperature) );
-        log(JSON.stringify(evt.detail.observation.temperature));
-      } );
-
-      weather01.addEventListener( "data-error", ( evt ) => {
-        console.log( "data error", JSON.stringify(evt.detail) );
-        log(JSON.stringify(evt.detail));
-      } );
-
-      weather01.addEventListener( "request-error", ( evt ) => {
-        console.log( "request error", JSON.stringify(evt.detail) );
-        log(JSON.stringify(evt.detail));
-      } );
-
-      // Uncomment the following line if the weather component is marked as non-editable
-      // RisePlayerConfiguration.Helpers.sendStartEvent( weather01 );
+      _configureComponents('#rise-data-weather-C', "current-temp-C");
+      _configureComponents('#rise-data-weather-F', "current-temp-F");
     }
 
     window.addEventListener( "rise-components-ready", configureComponents );
