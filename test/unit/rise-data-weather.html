@@ -171,7 +171,7 @@
       test( "should notify when fullAddress is updated", () => {
         sandbox.stub(element, "_fullAddressUpdated");
 
-        element._setDisplayAddress({});
+        element.displayAddress = {};
 
         assert.isTrue( element._fullAddressUpdated.called );
       } );
@@ -179,7 +179,7 @@
       test( "should call refresh when fullAddress is valid", () => {
         sandbox.stub(element, "_refresh");
 
-        element._setDisplayAddress({city: "Toronto", country: "CA"});
+        element.displayAddress = {city: "Toronto", country: "CA"};
 
         assert.isTrue( element._refresh.called );
       } );
@@ -188,7 +188,7 @@
         element._weatherRequestRetryCount = 3;
         sandbox.stub(element, "_refresh");
 
-        element._setDisplayAddress({city: "Toronto", country: "CA"});
+        element.displayAddress = {city: "Toronto", country: "CA"};
 
         assert.equal( element._weatherRequestRetryCount, 0 );
       } );
@@ -197,7 +197,7 @@
         sandbox.stub(element, "_refresh");
         sandbox.stub(element, "_sendWeatherEvent");
 
-        element._setDisplayAddress({});
+        element.displayAddress = {};
 
         assert.isTrue( element._sendWeatherEvent.called );
         assert.isFalse( element._refresh.called );
