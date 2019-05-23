@@ -25,8 +25,7 @@ class RiseDataWeather extends CacheMixin( PolymerElement ) {
        * The address of the display running this instance of the component.
        */
       displayAddress: {
-        type: Object,
-        readOnly: true
+        type: Object
       },
 
       /**
@@ -205,7 +204,7 @@ class RiseDataWeather extends CacheMixin( PolymerElement ) {
     super.log( "info", "start received" );
 
     RisePlayerConfiguration.DisplayData.onDisplayAddress(( displayAddress ) => {
-      this._setDisplayAddress( displayAddress );
+      this.displayAddress = displayAddress;
     });
   }
 
