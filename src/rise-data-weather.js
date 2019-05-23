@@ -25,8 +25,7 @@ class RiseDataWeather extends CacheMixin( PolymerElement ) {
        * The address of the display running this instance of the component.
        */
       displayAddress: {
-        type: Object,
-        readOnly: true
+        type: Object
       },
 
       /**
