@@ -18,15 +18,14 @@ class RiseDataWeather extends CacheMixin( PolymerElement ) {
        */
       scale: {
         type: String,
-        value: "F"
+        value: "F",
+        observer: "_scaleUpdated"
       },
 
       /**
        * The address of the display running this instance of the component.
        */
-      displayAddress: {
-        type: Object
-      },
+      displayAddress: Object,
 
       /**
       * The full display address in a single string.
@@ -206,6 +205,12 @@ class RiseDataWeather extends CacheMixin( PolymerElement ) {
     RisePlayerConfiguration.DisplayData.onDisplayAddress(( displayAddress ) => {
       this.displayAddress = displayAddress;
     });
+  }
+
+  _scaleUpdated() {
+    if ( this.scale && this.fullAddress ) {
+      this._fullAddressUpdated();
+    }
   }
 
   _fullAddressUpdated() {

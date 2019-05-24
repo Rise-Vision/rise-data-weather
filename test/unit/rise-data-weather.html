@@ -167,6 +167,36 @@
       });
     });
 
+    suite( "_scaleUpdated", () => {
+      test( "should notify when the scale is updated", () => {
+        sandbox.stub(element, "_scaleUpdated");
+
+        element.scale = "C";
+
+        assert.isTrue( element._scaleUpdated.called );
+      } );
+
+      test( "should call _fullAddressUpdated when scale & address are valid", () => {
+        sandbox.stub(element, "_refresh");
+
+        element.displayAddress = {city: "Toronto", country: "CA"};
+        sandbox.stub(element, "_fullAddressUpdated");
+
+        element.scale = "C";
+
+        assert.isTrue( element._fullAddressUpdated.called );
+      } );
+
+      test( "should not call _fullAddressUpdated when address is invalid", () => {
+        sandbox.stub(element, "_fullAddressUpdated");
+
+        element.scale = "C";
+
+        assert.isFalse( element._fullAddressUpdated.called );
+      } );
+
+    });
+
     suite( "_fullAddressUpdated", () => {
       test( "should notify when fullAddress is updated", () => {
         sandbox.stub(element, "_fullAddressUpdated");
