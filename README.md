@@ -233,6 +233,10 @@ On a real Display, the API is called using the location provided by the Display 
   
 In Preview, Company address is going to be used, following the same approach.
 
+### Weather Icons
+
+For a sample set of weather icons, please download [this file](https://drive.google.com/open?id=1jDZR49GSnssGZirL2wXDqstqLrINtper). The file name of the images match the value returned by the `icon` field of the API responses. 
+
 
 ## Built With
 - [Polymer 3](https://www.polymer-project.org/)
