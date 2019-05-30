@@ -26,10 +26,8 @@ function parseTinbu( body ) {
       report = validateData( body, xmlDoc ),
 
       isMetric = report.getAttribute( "metric" ) === "true",
-      reportDate = new Date( report.getAttribute( "localtime" ) || Date.now()),
 
       result = {
-        reportDate,
         observation: extractObservation( xmlDoc, isMetric ),
         location: extractLocation( xmlDoc, isMetric )
       };
