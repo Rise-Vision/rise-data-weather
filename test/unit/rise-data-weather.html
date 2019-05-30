@@ -439,7 +439,7 @@
     });
 
     suite( "_processData", () => {
-      const validXmlData = "<report localtime=\"Mon, 29 Apr 2019 13:10:12 EDT\"><observation temperature=\"12\"/><location/></report>";
+      const validXmlData = "<report><observation temperature=\"12\"/><location/></report>";
       let response;
 
       setup(()=>{
@@ -505,46 +505,6 @@
             done();
           }, 10);
         }, 10);    
-      });
-
-      test( "should not send data-update if returned data has the same timestamp", done => {
-        sandbox.stub(cache, "getCache").rejects();
-        sandbox.stub(cache, "putCache").resolves();
-        window.fetch.resolves(response);
-
-        sandbox.stub(element, "_sendWeatherEvent");
-
-        element._setWeatherData({
-          reportDate: new Date( "Mon, 29 Apr 2019 13:10:12 EDT" )
-        });
-
-        element._requestData();
-
-        setTimeout(() => {
-          assert.isFalse( element._sendWeatherEvent.called );
-
-          done();            
-        }, 10);
-      });
-
-      test( "should send data-update if returned data has a different timestamp", done => {
-        sandbox.stub(cache, "getCache").rejects();
-        sandbox.stub(cache, "putCache").resolves();
-        window.fetch.resolves(response);
-
-        sandbox.stub(element, "_sendWeatherEvent");
-
-        element.weatherData = {
-          reportDate: new Date()
-        };
-
-        element._requestData();
-
-        setTimeout(() => {
-          assert.isTrue( element._sendWeatherEvent.called );
-
-          done();            
-        }, 10);
       });
 
       test( "should enqueue next request for 1 hour", done => {

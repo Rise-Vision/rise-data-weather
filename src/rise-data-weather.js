@@ -185,11 +185,9 @@ class RiseDataWeather extends CacheMixin( PolymerElement ) {
     try {
       data = parseTinbu( content );
 
-      if ( !( this.weatherData && this.weatherData.reportDate ) || this.weatherData.reportDate.getTime() !== data.reportDate.getTime()) {
-        this._setWeatherData( data );
+      this._setWeatherData( data );
 
-        this._sendWeatherEvent( RiseDataWeather.EVENT_DATA_UPDATE, this.weatherData );
-      }
+      this._sendWeatherEvent( RiseDataWeather.EVENT_DATA_UPDATE, this.weatherData );
     } catch ( e ) {
       super.log( "error", "data error", { error: e.message });
 
