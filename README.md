@@ -111,7 +111,7 @@ When listening for the "data-update" event, the `event.detail` object returned i
       "country": "CA",
       "iso_cc": "CA",
       "country_name": "Canada",
-      "forecast": [
+      "forecasts": [
          {
             "day_sequence": "1",
             "day_of_week": "2",
