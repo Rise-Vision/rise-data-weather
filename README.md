@@ -237,6 +237,8 @@ In Preview, Company address is going to be used, following the same approach.
 
 For a sample set of weather icons, please download [this file](https://drive.google.com/open?id=1jDZR49GSnssGZirL2wXDqstqLrINtper). The file name of the images match the value returned by the `icon` field of the API responses. 
 
+For a complete list of `icon_name` results, please refer to [this file](https://drive.google.com/open?id=18r4q5oPadxgKw2c5TlclFnP2ilLf-FDB).
+
 
 ## Built With
 - [Polymer 3](https://www.polymer-project.org/)
