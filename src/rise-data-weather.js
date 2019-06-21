@@ -5,6 +5,7 @@ import { timeOut } from "@polymer/polymer/lib/utils/async.js";
 import { Debouncer } from "@polymer/polymer/lib/utils/debounce.js";
 
 import { weatherServerConfig } from "./rise-data-weather-config.js";
+import { version } from "./rise-data-weather-version.js";
 import { CacheMixin } from "./cache-mixin.js";
 import { parseTinbu } from "./tinbu-parser.js";
 
@@ -44,6 +45,24 @@ class RiseDataWeather extends CacheMixin( PolymerElement ) {
         readOnly: true
       }
     }
+  }
+
+  static get COMPONENT_NAME() {
+    return "rise-data-weather";
+  }
+
+  static get CACHE_CONFIG() {
+    return {
+      name: RiseDataWeather.COMPONENT_NAME
+    };
+  }
+
+  static get LOGGER_CONFIG() {
+    return {
+      name: RiseDataWeather.COMPONENT_NAME,
+      id: this.id,
+      version
+    };
   }
 
   static get FETCH_CONFIG() {
@@ -118,7 +137,8 @@ class RiseDataWeather extends CacheMixin( PolymerElement ) {
   }
 
   _init() {
-    super.init( this.id );
+    super.initCache( RiseDataWeather.CACHE_CONFIG );
+    super.initLogger( RiseDataWeather.LOGGER_CONFIG );
 
     this.addEventListener( RiseDataWeather.EVENT_START, this._handleStart, { once: true });
 

@@ -1,36 +1,34 @@
 import { dedupingMixin } from "../node_modules/@polymer/polymer/lib/utils/mixin.js";
-import { version } from "./rise-data-weather-version.js";
 
 export const LoggerMixin = dedupingMixin( base => {
+  const LOGGER_CONFIG = {
+    name: "logger-mixin",
+    id: "logger",
+    version: "1.0"
+  };
+
   class Logger extends base {
+
     constructor() {
       super();
+
+      this.loggerConfig = Object.assign({}, LOGGER_CONFIG );
     }
 
-    init( id ) {
-      this.id = id;
-    }
-
-    getComponentData() {
-      return {
-        name: "rise-data-weather",
-        id: this.id,
-        version
-      };
+    initLogger( loggerConfig ) {
+      Object.assign( this.loggerConfig, loggerConfig );
     }
 
     log( type, event, details = null, additionalFields ) {
-      const componentData = this.getComponentData();
-
       switch ( type ) {
       case "info":
-        RisePlayerConfiguration.Logger.info( componentData, event, details, additionalFields );
+        RisePlayerConfiguration.Logger.info( this.loggerConfig, event, details, additionalFields );
         break;
       case "warning":
-        RisePlayerConfiguration.Logger.warning( componentData, event, details, additionalFields );
+        RisePlayerConfiguration.Logger.warning( this.loggerConfig, event, details, additionalFields );
         break;
       case "error":
-        RisePlayerConfiguration.Logger.error( componentData, event, details, additionalFields );
+        RisePlayerConfiguration.Logger.error( this.loggerConfig, event, details, additionalFields );
         break;
       }
     }

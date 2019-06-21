@@ -3,8 +3,8 @@ import { LoggerMixin } from "./logger-mixin.js";
 
 export const CacheMixin = dedupingMixin( base => {
   const CACHE_CONFIG = {
-      CACHE_NAME: "rise-data-weather",
-      CACHE_DURATION: 1000 * 60 * 60 * 2,
+      name: "cache-mixin",
+      duration: 1000 * 60 * 60 * 2,
     },
     cacheBase = LoggerMixin( base );
 
@@ -12,12 +12,18 @@ export const CacheMixin = dedupingMixin( base => {
     constructor() {
       super();
 
+      this.cacheConfig = Object.assign({}, CACHE_CONFIG );
+    }
+
+    initCache( cacheConfig ) {
+      Object.assign( this.cacheConfig, cacheConfig );
+
       this._deleteExpiredCache();
     }
 
     _getCache() {
       if ( window.caches && window.caches.open ) {
-        return caches.open( CACHE_CONFIG.CACHE_NAME );
+        return caches.open( this.cacheConfig.name );
       } else {
         super.log( "warning", "cache API not available" );
 
@@ -32,7 +38,7 @@ export const CacheMixin = dedupingMixin( base => {
             cache.match( key ).then( response => {
               const date = new Date( response.headers.get( "date" ));
 
-              if ( Date.now() > date.getTime() + CACHE_CONFIG.CACHE_DURATION ) {
+              if ( Date.now() > date.getTime() + this.cacheConfig.duration ) {
                 cache.delete( key );
               }
             });
@@ -59,7 +65,7 @@ export const CacheMixin = dedupingMixin( base => {
         if ( response ) {
           const date = new Date( response.headers.get( "date" ));
 
-          if ( Date.now() < date.getTime() + CACHE_CONFIG.CACHE_DURATION ) {
+          if ( Date.now() < date.getTime() + this.cacheConfig.duration ) {
             return Promise.resolve( response );
 
           } else {

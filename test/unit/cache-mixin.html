@@ -44,8 +44,6 @@
     delete: sinon.spy(),
     put: sinon.spy()
   };
-  sinon.stub(caches, "open").resolves(cachesOpen);
-
 </script>
 
 <script type="module">
@@ -60,15 +58,35 @@
 
       logger = cache.__proto__.__proto__;
       sinon.stub(logger, "log");
+
+      sinon.stub(caches, "open").resolves(cachesOpen);
     });
 
     teardown(()=>{
-      caches.open.restore();
-      logger.log.restore();
+      sinon.restore();
+    });
+
+    suite( "init", () => {
+      test( "should cache with defaults", () => {
+        cache.getCache();
+
+        assert.isTrue( caches.open.calledWith( "cache-mixin" ) );
+      });
+
+      test( "should init cache", () => {
+        cache.initCache({
+          name: "rise-data-weather",
+        });
+
+        assert.isTrue( caches.open.calledWith( "rise-data-weather" ) );
+      });
     });
 
     suite("deleteExpiredCache", () => {
-      test( "should clear old cache entries", (done) => {
+      
+      test( "should clear old cache entries on init", done => {
+        cache.initCache();
+
         setTimeout(() => {
           assert.isTrue( cachesOpen.delete.calledWith('key2'));
 
@@ -82,7 +100,7 @@
         cachesOpen = { 
           match: sinon.stub().resolves(null)
         };
-        sinon.stub(caches, "open").resolves(cachesOpen);
+        caches.open.resolves(cachesOpen);
 
         cache.getCache().then(() => {
           done("error");
@@ -98,7 +116,7 @@
         cachesOpen = { 
           match: sinon.stub().resolves(cachedData)
         };
-        sinon.stub(caches, "open").resolves(cachesOpen);
+        caches.open.resolves(cachesOpen);
       
         cache.getCache().then( data => {
           assert.equal( data, cachedData );
@@ -116,7 +134,7 @@
           match: sinon.stub().resolves(cachedData),
           delete: sinon.spy()
         };
-        sinon.stub(caches, "open").resolves(cachesOpen);
+        caches.open.resolves(cachesOpen);
       
         cache.getCache("url").then(() => {
           done("error");
@@ -133,7 +151,7 @@
         cachesOpen = {
           put: sinon.spy()
         };
-        sinon.stub(caches, "open").resolves(cachesOpen);
+        caches.open.resolves(cachesOpen);
       });
 
       test("should store url as key and the object", done => {
