@@ -3,13 +3,13 @@
 import { PolymerElement } from "@polymer/polymer";
 import { timeOut } from "@polymer/polymer/lib/utils/async.js";
 import { Debouncer } from "@polymer/polymer/lib/utils/debounce.js";
-import { CacheMixin } from "rise-common-component/src/cache-mixin.js";
+import { RiseCommonComponent } from "rise-common-component/src/rise-common-component.js";
 
 import { weatherServerConfig } from "./rise-data-weather-config.js";
 import { version } from "./rise-data-weather-version.js";
 import { parseTinbu } from "./tinbu-parser.js";
 
-class RiseDataWeather extends CacheMixin( PolymerElement ) {
+class RiseDataWeather extends RiseCommonComponent {
 
   static get properties() {
     return {
@@ -57,12 +57,6 @@ class RiseDataWeather extends CacheMixin( PolymerElement ) {
   }
 
   // Event name constants
-  static get EVENT_CONFIGURED() {
-    return "configured";
-  }
-  static get EVENT_START() {
-    return "start";
-  }
   static get EVENT_DATA_UPDATE() {
     return "data-update";
   }
@@ -108,31 +102,10 @@ class RiseDataWeather extends CacheMixin( PolymerElement ) {
 
   ready() {
     super.ready();
-
-    if ( RisePlayerConfiguration.isConfigured()) {
-      this._init();
-    } else {
-      const init = () => this._init();
-
-      window.addEventListener( "rise-components-ready", init, { once: true });
-    }
   }
 
   _init() {
-    const name = this.tagName.toLowerCase();
-
-    super.initCache({
-      name
-    });
-    super.initLogger({
-      name,
-      id: this.id,
-      version
-    });
-
-    this.addEventListener( RiseDataWeather.EVENT_START, this._handleStart, { once: true });
-
-    this._sendWeatherEvent( RiseDataWeather.EVENT_CONFIGURED );
+    super._init();
   }
 
   _getUrl() {
@@ -144,14 +117,6 @@ class RiseDataWeather extends CacheMixin( PolymerElement ) {
     url += "&name=" + encodeURIComponent( this.fullAddress );
 
     return url;
-  }
-
-  _sendWeatherEvent( eventName, detail = {}) {
-    const event = new CustomEvent( eventName, {
-      bubbles: true, composed: true, detail
-    });
-
-    this.dispatchEvent( event );
   }
 
   _refresh( interval ) {
@@ -197,18 +162,18 @@ class RiseDataWeather extends CacheMixin( PolymerElement ) {
 
       this._setWeatherData( data );
 
-      this._sendWeatherEvent( RiseDataWeather.EVENT_DATA_UPDATE, this.weatherData );
+      this._sendEvent( RiseDataWeather.EVENT_DATA_UPDATE, this.weatherData );
     } catch ( e ) {
       super.log( "error", "data error", { error: e.message });
 
-      this._sendWeatherEvent( RiseDataWeather.EVENT_DATA_ERROR, e );
+      this._sendEvent( RiseDataWeather.EVENT_DATA_ERROR, e );
     }
 
     this._refresh( RiseDataWeather.FETCH_CONFIG.REFRESH );
   }
 
   _handleStart() {
-    super.log( "info", "start received" );
+    super._handleStart();
 
     RisePlayerConfiguration.DisplayData.onDisplayAddress(( displayAddress ) => {
       this.displayAddress = displayAddress;
@@ -231,7 +196,7 @@ class RiseDataWeather extends CacheMixin( PolymerElement ) {
     } else {
       super.log( "error", message, this.displayAddress );
 
-      this._sendWeatherEvent( RiseDataWeather.EVENT_DATA_ERROR, message );
+      this._sendEvent( RiseDataWeather.EVENT_DATA_ERROR, message );
     }
   }
 
@@ -248,7 +213,7 @@ class RiseDataWeather extends CacheMixin( PolymerElement ) {
       this._weatherRequestRetryCount = 0;
 
       super.log( "error", "request error", { error: err ? err.message : null });
-      this._sendWeatherEvent( RiseDataWeather.EVENT_REQUEST_ERROR );
+      this._sendEvent( RiseDataWeather.EVENT_REQUEST_ERROR );
 
       this._refresh( RiseDataWeather.FETCH_CONFIG.COOLDOWN );
     }

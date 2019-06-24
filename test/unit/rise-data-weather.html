@@ -47,8 +47,8 @@
     setup(() => {
       element = fixture("test-block");
 
-      cache = element.__proto__.__proto__;
-      logger = element.__proto__.__proto__.__proto__;
+      cache = element.__proto__.__proto__.__proto__;
+      logger = element.__proto__.__proto__.__proto__.__proto__;
 
       sandbox.stub(cache, "initCache");
       sandbox.stub(logger, "initLogger");
@@ -226,11 +226,11 @@
 
       test( "should send an error event when fullAddress is not valid", () => {
         sandbox.stub(element, "_refresh");
-        sandbox.stub(element, "_sendWeatherEvent");
+        sandbox.stub(element, "_sendEvent");
 
         element.displayAddress = {};
 
-        assert.isTrue( element._sendWeatherEvent.called );
+        assert.isTrue( element._sendEvent.called );
         assert.isFalse( element._refresh.called );
       } );
 
