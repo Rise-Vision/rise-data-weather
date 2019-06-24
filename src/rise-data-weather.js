@@ -47,24 +47,6 @@ class RiseDataWeather extends CacheMixin( PolymerElement ) {
     }
   }
 
-  static get COMPONENT_NAME() {
-    return "rise-data-weather";
-  }
-
-  static get CACHE_CONFIG() {
-    return {
-      name: RiseDataWeather.COMPONENT_NAME
-    };
-  }
-
-  static get LOGGER_CONFIG() {
-    return {
-      name: RiseDataWeather.COMPONENT_NAME,
-      id: this.id,
-      version
-    };
-  }
-
   static get FETCH_CONFIG() {
     return {
       RETRY: 1000 * 60,
@@ -137,8 +119,14 @@ class RiseDataWeather extends CacheMixin( PolymerElement ) {
   }
 
   _init() {
-    super.initCache( RiseDataWeather.CACHE_CONFIG );
-    super.initLogger( RiseDataWeather.LOGGER_CONFIG );
+    super.initCache({
+      name: this.tagName
+    });
+    super.initLogger({
+      name: this.tagName,
+      id: this.id,
+      version
+    });
 
     this.addEventListener( RiseDataWeather.EVENT_START, this._handleStart, { once: true });
 
