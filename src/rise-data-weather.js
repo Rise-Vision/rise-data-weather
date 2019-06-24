@@ -5,6 +5,7 @@ import { timeOut } from "@polymer/polymer/lib/utils/async.js";
 import { Debouncer } from "@polymer/polymer/lib/utils/debounce.js";
 
 import { weatherServerConfig } from "./rise-data-weather-config.js";
+import { version } from "./rise-data-weather-version.js";
 import { CacheMixin } from "./cache-mixin.js";
 import { parseTinbu } from "./tinbu-parser.js";
 
@@ -118,7 +119,14 @@ class RiseDataWeather extends CacheMixin( PolymerElement ) {
   }
 
   _init() {
-    super.init( this.id );
+    super.initCache({
+      name: this.tagName
+    });
+    super.initLogger({
+      name: this.tagName,
+      id: this.id,
+      version
+    });
 
     this.addEventListener( RiseDataWeather.EVENT_START, this._handleStart, { once: true });
 

@@ -50,7 +50,8 @@
       cache = element.__proto__.__proto__;
       logger = element.__proto__.__proto__.__proto__;
 
-      sandbox.stub(logger, "init");
+      sandbox.stub(cache, "initCache");
+      sandbox.stub(logger, "initLogger");
       sandbox.stub(logger, "log");
 
       sandbox.stub(window, "fetch");
