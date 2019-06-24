@@ -47,7 +47,7 @@
     setup(() => {
       element = fixture("test-block");
 
-      cache = element.__proto__.__proto__.__proto__;
+      cache = element.__proto__.__proto__;
       logger = element.__proto__.__proto__.__proto__.__proto__;
 
       sandbox.stub(cache, "initCache");
