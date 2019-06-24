@@ -113,12 +113,12 @@ jobs:
           key: node-cache-{{ checksum "package.json" }}
       - run: mkdir -p ~/.config
       - run: cp -r gcloud ~/.config
-      - run: npm install common-component
+      - run: npm install rise-common-component
       - run: |
           VERSION=$(cat version-string/version)
           TARGET=$WIDGETS_BASE/staging/components/rise-data-weather/$VERSION/
           echo Deploying version $VERSION to rise-data-weather
-          node_modules/common-component/deploy-gcs.sh rise-data-weather $TARGET
+          node_modules/rise-common-component/scripts/deploy-gcs.sh rise-data-weather $TARGET
 
   deploy-e2e-page:
     parameters:
@@ -200,12 +200,12 @@ jobs:
           key: node-cache-{{ checksum "package.json" }}
       - run: mkdir -p ~/.config
       - run: cp -r gcloud ~/.config
-      - run: npm install common-component
+      - run: npm install rise-common-component
       - run: |
           MAJOR=$(grep version package.json | grep -Po '[0-9]+' | head -1)
           TARGET=$WIDGETS_BASE/<< parameters.stage >>/components/rise-data-weather/$MAJOR/
           echo Deploying << parameters.stage >> version of rise-data-weather/$MAJOR
-          node_modules/common-component/deploy-gcs.sh rise-data-weather $TARGET
+          node_modules/rise-common-component/scripts/deploy-gcs.sh rise-data-weather $TARGET
 
 workflows:
   workflow1:

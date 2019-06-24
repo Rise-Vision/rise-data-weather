@@ -3,10 +3,10 @@
 import { PolymerElement } from "@polymer/polymer";
 import { timeOut } from "@polymer/polymer/lib/utils/async.js";
 import { Debouncer } from "@polymer/polymer/lib/utils/debounce.js";
+import { CacheMixin } from "rise-common-component/src/cache-mixin.js";
 
 import { weatherServerConfig } from "./rise-data-weather-config.js";
 import { version } from "./rise-data-weather-version.js";
-import { CacheMixin } from "./cache-mixin.js";
 import { parseTinbu } from "./tinbu-parser.js";
 
 class RiseDataWeather extends CacheMixin( PolymerElement ) {
@@ -119,11 +119,13 @@ class RiseDataWeather extends CacheMixin( PolymerElement ) {
   }
 
   _init() {
+    const name = this.tagName.toLowerCase();
+
     super.initCache({
-      name: this.tagName
+      name
     });
     super.initLogger({
-      name: this.tagName,
+      name,
       id: this.id,
       version
     });
