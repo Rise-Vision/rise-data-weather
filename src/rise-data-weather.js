@@ -1,6 +1,5 @@
 /* eslint-disable no-console */
 
-import { PolymerElement } from "@polymer/polymer";
 import { timeOut } from "@polymer/polymer/lib/utils/async.js";
 import { Debouncer } from "@polymer/polymer/lib/utils/debounce.js";
 import { RiseCommonComponent } from "rise-common-component/src/rise-common-component.js";
@@ -94,6 +93,8 @@ class RiseDataWeather extends RiseCommonComponent {
 
   constructor() {
     super();
+
+    this._setVersion( version );
 
     this._weatherRequestRetryCount = 0;
     this._refreshDebounceJob = null;
