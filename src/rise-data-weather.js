@@ -2,14 +2,14 @@
 
 import { timeOut } from "@polymer/polymer/lib/utils/async.js";
 import { Debouncer } from "@polymer/polymer/lib/utils/debounce.js";
-import { RiseCommonComponent } from "rise-common-component/src/rise-common-component.js";
+import { RiseElement } from "rise-common-component/src/rise-element.js";
 import { CacheMixin } from "rise-common-component/src/cache-mixin.js";
 
 import { weatherServerConfig } from "./rise-data-weather-config.js";
 import { version } from "./rise-data-weather-version.js";
 import { parseTinbu } from "./tinbu-parser.js";
 
-class RiseDataWeather extends CacheMixin( RiseCommonComponent ) {
+class RiseDataWeather extends CacheMixin( RiseElement ) {
 
   static get properties() {
     return {
