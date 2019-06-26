@@ -225,6 +225,20 @@ class RiseDataWeather extends CacheMixin( RiseElement ) {
     }
   }
 
+  _sendEvent( name, detail ) {
+    switch ( name ) {
+    case RiseDataWeather.EVENT_REQUEST_ERROR:
+    case RiseDataWeather.EVENT_DATA_ERROR:
+      super._setUptimeError( true );
+      break;
+    case RiseDataWeather.EVENT_DATA_UPDATE:
+      super._setUptimeError( false );
+      break;
+    default:
+    }
+    super._sendEvent( name, detail );
+  }
+
 }
 
 customElements.define( "rise-data-weather", RiseDataWeather );
