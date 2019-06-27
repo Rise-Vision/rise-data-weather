@@ -226,6 +226,8 @@ class RiseDataWeather extends CacheMixin( RiseElement ) {
   }
 
   _sendEvent( name, detail ) {
+    super._sendEvent( name, detail );
+
     switch ( name ) {
     case RiseDataWeather.EVENT_REQUEST_ERROR:
     case RiseDataWeather.EVENT_DATA_ERROR:
@@ -236,7 +238,6 @@ class RiseDataWeather extends CacheMixin( RiseElement ) {
       break;
     default:
     }
-    super._sendEvent( name, detail );
   }
 
 }
