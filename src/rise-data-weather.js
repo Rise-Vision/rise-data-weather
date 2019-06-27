@@ -1,15 +1,16 @@
 /* eslint-disable no-console */
 
-import { timeOut } from "@polymer/polymer/lib/utils/async.js";
-import { Debouncer } from "@polymer/polymer/lib/utils/debounce.js";
 import { RiseElement } from "rise-common-component/src/rise-element.js";
 import { CacheMixin } from "rise-common-component/src/cache-mixin.js";
 
 import { weatherServerConfig } from "./rise-data-weather-config.js";
 import { version } from "./rise-data-weather-version.js";
+import { FetchMixin } from "./fetch-mixin.js";
 import { parseTinbu } from "./tinbu-parser.js";
 
-class RiseDataWeather extends CacheMixin( RiseElement ) {
+const fetchBase = CacheMixin( RiseElement );
+
+class RiseDataWeather extends FetchMixin( fetchBase ) {
 
   static get properties() {
     return {
@@ -45,15 +46,6 @@ class RiseDataWeather extends CacheMixin( RiseElement ) {
         readOnly: true
       }
     }
-  }
-
-  static get FETCH_CONFIG() {
-    return {
-      RETRY: 1000 * 60,
-      COOLDOWN: 1000 * 60 * 10,
-      REFRESH: 1000 * 60 * 60,
-      COUNT: 5
-    };
   }
 
   // Event name constants
@@ -96,15 +88,12 @@ class RiseDataWeather extends CacheMixin( RiseElement ) {
     super();
 
     this._setVersion( version );
-
-    this._weatherRequestRetryCount = 0;
-    this._refreshDebounceJob = null;
-    this._logDataReceived = true;
   }
 
   ready() {
     super.ready();
 
+    super.initFetch({}, this._handleResponse, this._handleError );
     super.initCache({
       name: this.tagName.toLowerCase()
     });
@@ -125,42 +114,7 @@ class RiseDataWeather extends CacheMixin( RiseElement ) {
     return url;
   }
 
-  _refresh( interval ) {
-    this._refreshDebounceJob = Debouncer.debounce( this._refreshDebounceJob, timeOut.after( interval ), () => {
-      this._getData();
-    });
-  }
-
-  _requestData() {
-    fetch( this._getUrl(), {
-      headers: { "X-Requested-With": "rise-data-weather" }
-    }).then( res => {
-      this._logData( false );
-      this._handleResponse( res.clone());
-
-      super.putCache( res );
-    }).catch( this._handleFetchError.bind( this ));
-  }
-
-  _getData() {
-    let url = this._getUrl();
-
-    super.getCache( url ).then( response => {
-      this._logData( true );
-      response.text().then( this._processData.bind( this ));
-    }).catch(() => {
-      this._requestData();
-    });
-  }
-
-  _logData( cached ) {
-    if ( this._logDataReceived ) {
-      this._logDataReceived = false;
-      super.log( "info", "data received", { cached });
-    }
-  }
-
-  _processData( content ) {
+  _processWeatherData( content ) {
     var data;
 
     try {
@@ -168,14 +122,12 @@ class RiseDataWeather extends CacheMixin( RiseElement ) {
 
       this._setWeatherData( data );
 
-      this._sendEvent( RiseDataWeather.EVENT_DATA_UPDATE, this.weatherData );
+      this._sendWeatherEvent( RiseDataWeather.EVENT_DATA_UPDATE, this.weatherData );
     } catch ( e ) {
       super.log( "error", "data error", { error: e.message });
 
-      this._sendEvent( RiseDataWeather.EVENT_DATA_ERROR, e );
+      this._sendWeatherEvent( RiseDataWeather.EVENT_DATA_ERROR, e );
     }
-
-    this._refresh( RiseDataWeather.FETCH_CONFIG.REFRESH );
   }
 
   _handleStart() {
@@ -198,43 +150,32 @@ class RiseDataWeather extends CacheMixin( RiseElement ) {
     if ( this.fullAddress ) {
       this._weatherRequestRetryCount = 0;
 
-      this._refresh( 0 );
+      super.fetch( this._getUrl());
     } else {
       super.log( "error", message, this.displayAddress );
 
-      this._sendEvent( RiseDataWeather.EVENT_DATA_ERROR, message );
+      this._sendWeatherEvent( RiseDataWeather.EVENT_DATA_ERROR, message );
     }
   }
 
   _handleResponse( resp ) {
-    resp.text().then( this._processData.bind( this ));
+    resp.text().then( this._processWeatherData.bind( this ));
   }
 
-  _handleFetchError( err ) {
-    if ( this._weatherRequestRetryCount < RiseDataWeather.FETCH_CONFIG.COUNT ) {
-      this._weatherRequestRetryCount += 1;
-
-      this._refresh( RiseDataWeather.FETCH_CONFIG.RETRY );
-    } else {
-      this._weatherRequestRetryCount = 0;
-
-      super.log( "error", "request error", { error: err ? err.message : null });
-      this._sendEvent( RiseDataWeather.EVENT_REQUEST_ERROR );
-
-      this._refresh( RiseDataWeather.FETCH_CONFIG.COOLDOWN );
-    }
+  _handleError() {
+    this._sendWeatherEvent( RiseDataWeather.EVENT_REQUEST_ERROR );
   }
 
-  _sendEvent( name, detail ) {
-    super._sendEvent( name, detail );
+  _sendWeatherEvent( name, detail ) {
+    this._sendEvent( name, detail );
 
     switch ( name ) {
     case RiseDataWeather.EVENT_REQUEST_ERROR:
     case RiseDataWeather.EVENT_DATA_ERROR:
-      super._setUptimeError( true );
+      this._setUptimeError( true );
       break;
     case RiseDataWeather.EVENT_DATA_UPDATE:
-      super._setUptimeError( false );
+      this._setUptimeError( false );
       break;
     default:
     }
