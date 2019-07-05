@@ -34,17 +34,26 @@
 
 <script>
   window.RisePlayerConfiguration = {
-    onDisplayAddressCallback: null,
+    onDisplayDataCallback: null,
     isConfigured: function(){return false},
     getDisplayId: function(){return 'DisplayID'},
     DisplayData: {
-      onDisplayAddress: function(callback){
-        RisePlayerConfiguration.onDisplayAddressCallback = callback;
+      onDisplayData: function(callback){
+        RisePlayerConfiguration.onDisplayDataCallback = callback;
         callback({
-          city: "Buffalo",
-          province: "NY",
-          country: "US",
-          postalCode: 14202
+          useCompanyAddress: false,
+          displayAddress: {
+            city: "Buffalo",
+            province: "NY",
+            country: "US",
+            postalCode: 14202
+          },
+          companyAddress: {
+            city: "New York",
+            province: "NY",
+            country: "US",
+            postalCode: 10001
+          }
         });
       }
     },
