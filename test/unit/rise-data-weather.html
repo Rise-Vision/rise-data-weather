@@ -16,11 +16,13 @@
     RisePlayerConfiguration = {
       isConfigured: () => false,
       DisplayData: {
-        onDisplayAddress: callback => {
+        onDisplayData: callback => {
           callback({
-            city: "New York",
-            province: "NY",
-            country: "US"
+            displayAddress: {
+              city: "New York",
+              province: "NY",
+              country: "US"
+            }
           });
         }
       },
@@ -153,19 +155,104 @@
 
     suite( "'start' event", () => {
       test( "should retrieve displayAddress", () => {
-        sandbox.spy(RisePlayerConfiguration.DisplayData, "onDisplayAddress");
+        sandbox.spy(RisePlayerConfiguration.DisplayData, "onDisplayData");
 
         element.dispatchEvent( new CustomEvent( "start" ) );
       
-        assert.isTrue( RisePlayerConfiguration.DisplayData.onDisplayAddress.called );
+        assert.isTrue( RisePlayerConfiguration.DisplayData.onDisplayData.called );
         assert.deepEqual( logger.log.getCall(0).args, ["info", "start received"] );
       } );
+
+      test( "should call _onDisplayData", () => {
+        sandbox.spy(element, "_onDisplayData");
+        element.dispatchEvent( new CustomEvent( "start" ) );
       
-      test( "should update displayAddress", () => {
+        assert.isTrue( element._onDisplayData.called );
+      });
+      
+      test( "should finally update displayAddress", () => {
         element.dispatchEvent( new CustomEvent( "start" ) );
       
         assert.deepEqual( element.displayAddress, { city: "New York", province: "NY", country: "US"} );
       });
+    });
+
+    suite( "_onDisplayData" , () => {
+      test( "should set invalid address if displayData is missing", () => {
+        element._onDisplayData();
+
+        assert.deepEqual( element.displayAddress, {} );
+      });
+
+      test( "should set invalid address if displayData has invalid addresses", () => {
+        element._onDisplayData( {
+          displayAddress: {},
+          companyAddress: {}
+        } );
+
+        assert.deepEqual( element.displayAddress, {} );
+      });
+
+      test( "should default to companyAddress if displayAddress is invalid", () => {
+        element._onDisplayData( {
+          useCompanyAddress: true,
+          displayAddress: {},
+          companyAddress: {
+            postalCode: 19343
+          }
+        } );
+
+        assert.deepEqual( element.displayAddress, {
+          postalCode: 19343
+        } );
+      });
+
+      test( "should default to displayAddress if companyAddress is invalid", () => {
+        element._onDisplayData( {
+          useCompanyAddress: false,
+          displayAddress: {
+            postalCode: 14202
+          },
+          companyAddress: {}
+        } );
+
+        assert.deepEqual( element.displayAddress, {
+          postalCode: 14202
+        } );
+      });
+
+      test( "should use to displayAddress if useCompanyAddress is false", () => {
+        element._onDisplayData( {
+          useCompanyAddress: false,
+          displayAddress: {
+            postalCode: 14202
+          },
+          companyAddress: {
+            postalCode: 19343
+          },
+        } );
+
+        assert.deepEqual( element.displayAddress, {
+          postalCode: 14202
+        } );
+      });
+
+      test( "should use to companyAddress if useCompanyAddress is true", () => {
+        element._onDisplayData( {
+          useCompanyAddress: true,
+          displayAddress: {
+            postalCode: 14202
+          },
+          companyAddress: {
+            postalCode: 19343
+          },
+        } );
+
+        assert.deepEqual( element.displayAddress, {
+          postalCode: 19343
+        } );
+      });
+
     });
 
     suite( "_scaleUpdated", () => {

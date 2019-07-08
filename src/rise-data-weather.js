@@ -67,10 +67,40 @@ class RiseDataWeather extends CacheMixin( RiseElement ) {
     return "request-error";
   }
 
+  constructor() {
+    super();
+
+    this._setVersion( version );
+
+    this._weatherRequestRetryCount = 0;
+    this._refreshDebounceJob = null;
+    this._logDataReceived = true;
+  }
+
+  ready() {
+    super.ready();
+
+    super.initCache({
+      name: this.tagName.toLowerCase()
+    });
+  }
+
+  _init() {
+    super._init();
+  }
+
+  _isValidAddress( address ) {
+    if ( !address ) {
+      return false;
+    } else if ( !( address.postalCode || ( address.city && address.country ))) {
+      return false;
+    } else {
+      return true;
+    }
+  }
+
   _computeFullAddress( displayAddress ) {
-    if ( !displayAddress ) {
-      return "";
-    } else if ( !( displayAddress.postalCode || ( displayAddress.city && displayAddress.country ))) {
+    if ( !this._isValidAddress( displayAddress )) {
       return "";
     }
 
@@ -92,26 +122,29 @@ class RiseDataWeather extends CacheMixin( RiseElement ) {
     return resp.join( "," );
   }
 
-  constructor() {
-    super();
+  _onDisplayData( displayData ) {
+    if ( displayData ) {
+      let isCompanyAddressValid = this._isValidAddress( displayData.companyAddress ),
+        isDisplayAddressValid = this._isValidAddress( displayData.displayAddress );
 
-    this._setVersion( version );
+      if (( !displayData.useCompanyAddress || !isCompanyAddressValid ) && isDisplayAddressValid ) {
+        this.displayAddress = displayData.displayAddress;
 
-    this._weatherRequestRetryCount = 0;
-    this._refreshDebounceJob = null;
-    this._logDataReceived = true;
+        return;
+      } else if ( isCompanyAddressValid ) {
+        this.displayAddress = displayData.companyAddress;
+
+        return;
+      }
+    }
+
+    this.displayAddress = {};
   }
 
-  ready() {
-    super.ready();
+  _handleStart() {
+    super._handleStart();
 
-    super.initCache({
-      name: this.tagName.toLowerCase()
-    });
-  }
-
-  _init() {
-    super._init();
+    RisePlayerConfiguration.DisplayData.onDisplayData( this._onDisplayData.bind( this ));
   }
 
   _getUrl() {
@@ -176,14 +209,6 @@ class RiseDataWeather extends CacheMixin( RiseElement ) {
     }
 
     this._refresh( RiseDataWeather.FETCH_CONFIG.REFRESH );
-  }
-
-  _handleStart() {
-    super._handleStart();
-
-    RisePlayerConfiguration.DisplayData.onDisplayAddress(( displayAddress ) => {
-      this.displayAddress = displayAddress;
-    });
   }
 
   _scaleUpdated() {
