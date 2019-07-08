@@ -2,10 +2,10 @@
 
 import { RiseElement } from "rise-common-component/src/rise-element.js";
 import { CacheMixin } from "rise-common-component/src/cache-mixin.js";
+import { FetchMixin } from "rise-common-component/src/fetch-mixin.js";
 
 import { weatherServerConfig } from "./rise-data-weather-config.js";
 import { version } from "./rise-data-weather-version.js";
-import { FetchMixin } from "./fetch-mixin.js";
 import { parseTinbu } from "./tinbu-parser.js";
 
 const fetchBase = CacheMixin( RiseElement );
@@ -150,7 +150,9 @@ class RiseDataWeather extends FetchMixin( fetchBase ) {
     if ( this.fullAddress ) {
       this._weatherRequestRetryCount = 0;
 
-      super.fetch( this._getUrl());
+      super.fetch( this._getUrl(), {
+        headers: { "X-Requested-With": "rise-data-weather" }
+      });
     } else {
       super.log( "error", message, this.displayAddress );
 
