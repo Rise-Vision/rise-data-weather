@@ -59,10 +59,37 @@ class RiseDataWeather extends FetchMixin( fetchBase ) {
     return "request-error";
   }
 
+  constructor() {
+    super();
+
+    this._setVersion( version );
+  }
+
+  ready() {
+    super.ready();
+
+    super.initFetch({}, this._handleResponse, this._handleError );
+    super.initCache({
+      name: this.tagName.toLowerCase()
+    });
+  }
+
+  _init() {
+    super._init();
+  }
+
+  _isValidAddress( address ) {
+    if ( !address ) {
+      return false;
+    } else if ( !( address.postalCode || ( address.city && address.country ))) {
+      return false;
+    } else {
+      return true;
+    }
+  }
+
   _computeFullAddress( displayAddress ) {
-    if ( !displayAddress ) {
-      return "";
-    } else if ( !( displayAddress.postalCode || ( displayAddress.city && displayAddress.country ))) {
+    if ( !this._isValidAddress( displayAddress )) {
       return "";
     }
 
@@ -84,23 +111,29 @@ class RiseDataWeather extends FetchMixin( fetchBase ) {
     return resp.join( "," );
   }
 
-  constructor() {
-    super();
+  _onDisplayData( displayData ) {
+    if ( displayData ) {
+      let isCompanyAddressValid = this._isValidAddress( displayData.companyAddress ),
+        isDisplayAddressValid = this._isValidAddress( displayData.displayAddress );
 
-    this._setVersion( version );
+      if (( !displayData.useCompanyAddress || !isCompanyAddressValid ) && isDisplayAddressValid ) {
+        this.displayAddress = displayData.displayAddress;
+
+        return;
+      } else if ( isCompanyAddressValid ) {
+        this.displayAddress = displayData.companyAddress;
+
+        return;
+      }
+    }
+
+    this.displayAddress = {};
   }
 
-  ready() {
-    super.ready();
+  _handleStart() {
+    super._handleStart();
 
-    super.initFetch({}, this._handleResponse, this._handleError );
-    super.initCache({
-      name: this.tagName.toLowerCase()
-    });
-  }
-
-  _init() {
-    super._init();
+    RisePlayerConfiguration.DisplayData.onDisplayData( this._onDisplayData.bind( this ));
   }
 
   _getUrl() {
@@ -128,14 +161,6 @@ class RiseDataWeather extends FetchMixin( fetchBase ) {
 
       this._sendWeatherEvent( RiseDataWeather.EVENT_DATA_ERROR, e );
     }
-  }
-
-  _handleStart() {
-    super._handleStart();
-
-    RisePlayerConfiguration.DisplayData.onDisplayAddress(( displayAddress ) => {
-      this.displayAddress = displayAddress;
-    });
   }
 
   _scaleUpdated() {
