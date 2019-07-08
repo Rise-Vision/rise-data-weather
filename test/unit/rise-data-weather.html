@@ -170,7 +170,7 @@
 
         element.dispatchEvent( new CustomEvent( "start" ) );
       
-        assert.isTrue( RisePlayerConfiguration.DisplayData.onDisplayAddress.called );
+        assert.isTrue( RisePlayerConfiguration.DisplayData.onDisplayData.called );
         assert.deepEqual( loggerMixin.log.getCall(0).args, ["info", "start received"] );
       } );
 
