@@ -194,15 +194,15 @@ class RiseDataWeather extends FetchMixin( fetchBase ) {
   }
 
   _sendWeatherEvent( name, detail ) {
-    this._sendEvent( name, detail );
+    super._sendEvent( name, detail );
 
     switch ( name ) {
     case RiseDataWeather.EVENT_REQUEST_ERROR:
     case RiseDataWeather.EVENT_DATA_ERROR:
-      this._setUptimeError( true );
+      super._setUptimeError( true );
       break;
     case RiseDataWeather.EVENT_DATA_UPDATE:
-      this._setUptimeError( false );
+      super._setUptimeError( false );
       break;
     default:
     }

@@ -653,7 +653,7 @@
 
     suite( "uptime", () => {
       setup(() => {
-        sandbox.stub(element, '_setUptimeError');
+        sandbox.stub(element.__proto__.__proto__, '_setUptimeError');
       });
 
       test("should default to no uptime error", () => {
