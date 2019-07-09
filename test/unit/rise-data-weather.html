@@ -81,8 +81,12 @@
 
     suite( "_computeFullAddress", () => {
 
-      test( "should return city,province,postalCode,country", () => {
-        assert.equal(element._computeFullAddress( { city: "Toronto", province: "ON", postalCode: "M4M 1A1", country: "CA"} ), "Toronto,ON,M4M 1A1,CA");
+      test( "should return postal code, country for US and CA", () => {
+        assert.equal(element._computeFullAddress( { city: "Toronto", province: "ON", postalCode: "M4M 1A1", country: "CA"} ), "M4M 1A1,CA");
+        assert.equal(element._computeFullAddress( { city: "New York", province: "NY", postalCode: "14202", country: "US"} ), "14202,US");        
+      });
+
+      test( "should return city,province,postalCode,country for other countries", () => {
         assert.equal(element._computeFullAddress( { city: "Santos", province: "SP", postalCode: 11045, country: "BR"} ), "Santos,SP,11045,BR");
       });
 

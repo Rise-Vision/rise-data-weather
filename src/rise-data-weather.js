@@ -106,17 +106,22 @@ class RiseDataWeather extends CacheMixin( RiseElement ) {
 
     let resp = [];
 
-    if ( displayAddress.city ) {
-      resp.push( displayAddress.city );
-    }
-    if ( displayAddress.province ) {
-      resp.push( displayAddress.province );
-    }
-    if ( displayAddress.postalCode ) {
+    if (( displayAddress.country === "US" || displayAddress.country === "CA" ) && displayAddress.postalCode ) {
       resp.push( displayAddress.postalCode );
-    }
-    if ( displayAddress.country ) {
       resp.push( displayAddress.country );
+    } else {
+      if ( displayAddress.city ) {
+        resp.push( displayAddress.city );
+      }
+      if ( displayAddress.province ) {
+        resp.push( displayAddress.province );
+      }
+      if ( displayAddress.postalCode ) {
+        resp.push( displayAddress.postalCode );
+      }
+      if ( displayAddress.country ) {
+        resp.push( displayAddress.country );
+      }
     }
 
     return resp.join( "," );
