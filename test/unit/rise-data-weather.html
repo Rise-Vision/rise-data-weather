@@ -629,7 +629,7 @@
 
           assert.isTrue( logger.log.calledTwice );
           assert.deepEqual( logger.log.getCall(0).args, ["info", "data received", {cached: false}] );
-          assert.deepEqual( logger.log.getCall(1).args, ["error", "data error", {error: "Invalid weather report (Error: Report data is missing)."}] );
+          assert.deepEqual( logger.log.getCall(1).args, ["error", "data error", {error: "Invalid weather report (Error: Report data is missing (<invalid/>))"}] );
       
           done();
         });

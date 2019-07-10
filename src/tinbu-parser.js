@@ -34,7 +34,7 @@ function parseTinbu( body ) {
 
     return result;
   } catch ( e ) {
-    throw new Error( `Invalid weather report (${e}).` );
+    throw new Error( `Invalid weather report (${e})` );
   }
 }
 
@@ -55,7 +55,7 @@ function validateData( body, xmlDoc ) {
     if ( error !== null ) {
       throw new Error( error.textContent );
     } else {
-      throw new Error( "Report data is missing" );
+      throw new Error( `Report data is missing (${body})` );
     }
   }
   return report;
