@@ -173,10 +173,14 @@ class RiseDataWeather extends CacheMixin( RiseElement ) {
     fetch( this._getUrl(), {
       headers: { "X-Requested-With": "rise-data-weather" }
     }).then( res => {
-      this._logData( false );
-      this._handleResponse( res.clone());
+      if ( res.ok ) {
+        this._logData( false );
+        this._handleResponse( res.clone());
 
-      super.putCache( res );
+        super.putCache( res );
+      } else {
+        throw new Error( `Request rejected with status ${res.status}: ${res.statusText}` );
+      }
     }).catch( this._handleFetchError.bind( this ));
   }
 

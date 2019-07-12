@@ -426,6 +426,25 @@
         }, 10);
       });
 
+      test( "should handle request http response failures", done => {
+        sandbox.stub(cache, "getCache").rejects();
+        sandbox.stub(cache, "putCache").resolves();
+
+        response = new Response(validXmlData,{status: 500, headers:{date: new Date()}});
+      
+        window.fetch.resolves(response);
+
+        sandbox.stub(element, "_handleFetchError");
+
+        element._requestData();
+
+        setTimeout(() => {
+          assert.isTrue( element._handleFetchError.called );
+
+          done();
+        }, 10);
+      });
+
       suite( "data refresh mechanism", () => {
         let clock;
         
