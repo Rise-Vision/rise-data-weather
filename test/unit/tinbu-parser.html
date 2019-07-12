@@ -59,19 +59,19 @@
       });
 
       test( "should throw error on invalid data" , () => {
-        assert.throws(() => tinbu.parseTinbu("<incorrext-xml/>"), "Invalid weather report (Error: Report data is missing)");
-        assert.throws(() => tinbu.parseTinbu(null), "Invalid weather report (Error: Report data is missing)");
-        assert.throws(() => tinbu.parseTinbu(), "Invalid weather report (Error: Report data is missing)");
+        assert.throws(() => tinbu.parseTinbu("<incorrext-xml/>"), "Invalid weather report (Error: Report data is missing (<incorrext-xml/>))");
+        assert.throws(() => tinbu.parseTinbu(null), "Invalid weather report (Error: Report data is missing (null))");
+        assert.throws(() => tinbu.parseTinbu(), "Invalid weather report (Error: Report data is missing (undefined))");
         assert.throws(() => tinbu.parseTinbu("<report></report>"), "Invalid weather report (Error: Observation data is missing)");
         assert.throws(() => tinbu.parseTinbu("<report><observation/></report>"), "Invalid weather report (Error: Location data is missing)");
         assert.throws(() => tinbu.parseTinbu("<report><location></location></report>"), "Invalid weather report (Error: Observation data is missing)");
 
-        assert.throws(() => tinbu.parseTinbu(noCityError), "Invalid weather report (Error: IO: No City ID Selected).");
+        assert.throws(() => tinbu.parseTinbu(noCityError), "Invalid weather report (Error: IO: No City ID Selected)");
       });
 
       test( "should throw error on invalid passcode" , () => {
-        assert.throws(() => tinbu.parseTinbu(noPasscodeError), "Invalid weather report (Error: Wrong Passcode).");
-        assert.throws(() => tinbu.parseTinbu(wrongPasscodeError), "Invalid weather report (Error: Wrong Passcode).");
+        assert.throws(() => tinbu.parseTinbu(noPasscodeError), "Invalid weather report (Error: Wrong Passcode)");
+        assert.throws(() => tinbu.parseTinbu(wrongPasscodeError), "Invalid weather report (Error: Wrong Passcode)");
       });
 
       test( "should skip first observation as it was reported as unreliable" , () =>{

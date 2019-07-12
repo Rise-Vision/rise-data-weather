@@ -92,8 +92,12 @@
 
     suite( "_computeFullAddress", () => {
 
-      test( "should return city,province,postalCode,country", () => {
-        assert.equal(element._computeFullAddress( { city: "Toronto", province: "ON", postalCode: "M4M 1A1", country: "CA"} ), "Toronto,ON,M4M 1A1,CA");
+      test( "should return postal code, country for US and CA", () => {
+        assert.equal(element._computeFullAddress( { city: "Toronto", province: "ON", postalCode: "M4M 1A1", country: "CA"} ), "M4M 1A1,CA");
+        assert.equal(element._computeFullAddress( { city: "New York", province: "NY", postalCode: "14202", country: "US"} ), "14202,US");        
+      });
+
+      test( "should return city,province,postalCode,country for other countries", () => {
         assert.equal(element._computeFullAddress( { city: "Santos", province: "SP", postalCode: 11045, country: "BR"} ), "Santos,SP,11045,BR");
       });
 
@@ -425,6 +429,23 @@
         });
       });
 
+      test( "should handle request http response failures", done => {
+        sandbox.stub(cacheMixin, "getCache").rejects();
+        sandbox.stub(cacheMixin, "putCache").resolves();
+
+        response = new Response(validXmlData,{status: 500, headers:{date: new Date()}});
+      
+        window.fetch.resolves(response);
+
+        sandbox.stub(fetchMixin, "_handleFetchError");
+
+        fetchMixin._requestData().then(() => {
+          assert.isTrue( fetchMixin._handleFetchError.called );
+
+          done();
+        });
+      });
+
       suite( "data refresh mechanism", () => {
         let clock;
         
@@ -623,7 +644,7 @@
 
           assert.isTrue( loggerMixin.log.calledTwice );
           assert.deepEqual( loggerMixin.log.getCall(0).args, ["info", "data received", {cached: false}] );
-          assert.deepEqual( loggerMixin.log.getCall(1).args, ["error", "data error", {error: "Invalid weather report (Error: Report data is missing)."}] );
+          assert.deepEqual( loggerMixin.log.getCall(1).args, ["error", "data error", {error: "Invalid weather report (Error: Report data is missing (<invalid/>))"}] );
       
           done();
         });
