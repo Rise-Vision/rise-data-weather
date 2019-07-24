@@ -44,19 +44,30 @@
   suite("rise-data-weather", () => {
     let sandbox = sinon.createSandbox();
     let element;
-    let cache, logger;
+    let fetchMixin, cacheMixin, loggerMixin;
 
     setup(() => {
       element = fixture("test-block");
 
-      cache = element.__proto__.__proto__;
-      logger = element.__proto__.__proto__.__proto__.__proto__;
+      fetchMixin = element.__proto__.__proto__;
+      cacheMixin = element.__proto__.__proto__.__proto__;
+      loggerMixin = element.__proto__.__proto__.__proto__.__proto__.__proto__;
 
-      sandbox.stub(cache, "initCache");
-      sandbox.stub(logger, "initLogger");
-      sandbox.stub(logger, "log");
+      sandbox.stub(cacheMixin, "initCache");
+      sandbox.stub(loggerMixin, "initLogger");
+      sandbox.stub(loggerMixin, "log");
 
       sandbox.stub(window, "fetch");
+
+      const handleResponse = (resp) => element._handleResponse(resp);
+      const handleError = (err) => element._handleError(err);
+      fetchMixin.fetchConfig = {};
+      fetchMixin.initFetch({
+        retry: 1000 * 60,
+        cooldown: 1000 * 60 * 10,
+        refresh: 1000 * 60 * 60,
+        count: 5
+      }, handleResponse, handleError );
     });
 
     teardown(()=>{
@@ -164,7 +175,7 @@
         element.dispatchEvent( new CustomEvent( "start" ) );
       
         assert.isTrue( RisePlayerConfiguration.DisplayData.onDisplayData.called );
-        assert.deepEqual( logger.log.getCall(0).args, ["info", "start received"] );
+        assert.deepEqual( loggerMixin.log.getCall(0).args, ["info", "start received"] );
       } );
 
       test( "should call _onDisplayData", () => {
@@ -299,74 +310,70 @@
       } );
 
       test( "should call refresh when fullAddress is valid", () => {
-        sandbox.stub(element, "_refresh");
+        sandbox.stub(fetchMixin, "_refresh");
 
         element.displayAddress = {city: "Toronto", country: "CA"};
 
-        assert.isTrue( element._refresh.called );
+        assert.isTrue( fetchMixin._refresh.called );
       } );
 
       test( "should reset requestRetryCount count", () => {
-        element._weatherRequestRetryCount = 3;
-        sandbox.stub(element, "_refresh");
+        element._requestRetryCount = 3;
+        sandbox.stub(fetchMixin, "_refresh");
 
         element.displayAddress = {city: "Toronto", country: "CA"};
 
-        assert.equal( element._weatherRequestRetryCount, 0 );
+        assert.equal( element._requestRetryCount, 0 );
       } );
 
       test( "should send an error event when fullAddress is not valid", () => {
-        sandbox.stub(element, "_refresh");
-        sandbox.stub(element, "_sendEvent");
+        sandbox.stub(fetchMixin, "_refresh");
+        sandbox.stub(element, "_sendWeatherEvent");
 
         element.displayAddress = {};
 
-        assert.isTrue( element._sendEvent.called );
-        assert.isFalse( element._refresh.called );
+        assert.isTrue( element._sendWeatherEvent.called );
+        assert.isFalse( fetchMixin._refresh.called );
       } );
 
     });
 
     suite( "_getData", () => {
       test( "should get the result from cache", done => {
-        sandbox.stub(cache, "getCache").resolves({
+        sandbox.stub(cacheMixin, "getCache").resolves({
           text: () => {
             return Promise.resolve("text");
           }
         });
-        sandbox.stub(element, "_processData");
-        sandbox.stub(element, "_requestData");
+        sandbox.stub(element, "_processWeatherData");
+        sandbox.stub(fetchMixin, "_requestData");
 
-        element._getData();
+        fetchMixin._getData().then(() => {
+          assert.isTrue( cacheMixin.getCache.called );
+          assert.isTrue( element._processWeatherData.called );
+          assert.isTrue( element._processWeatherData.calledWith("text") );          
 
-        setTimeout(() => {
-          assert.isTrue( cache.getCache.called );
-          assert.isTrue( element._processData.called );
-          assert.isTrue( element._processData.calledWith("text") );          
-
-          assert.isFalse( element._requestData.called );
+          assert.isFalse( fetchMixin._requestData.called );
 
           done();
-        }, 10);
+        });
       });
 
       test( "should call API if cache is not available", done => {
-        sandbox.stub(cache, "getCache").rejects();
-        sandbox.stub(element, "_processData");
-        sandbox.stub(element, "_requestData");
+        sandbox.stub(cacheMixin, "getCache").rejects();
+        sandbox.stub(element, "_processWeatherData");
+        sandbox.stub(fetchMixin, "_requestData");
 
         window.fetch.resolves();
 
-        element._getData();
+        element._getData().then(() => {
+          assert.isTrue( cacheMixin.getCache.called );
+          assert.isFalse( element._processWeatherData.called );
 
-        setTimeout(() => {
-          assert.isTrue( cache.getCache.called );
-          assert.isFalse( element._processData.called );
-
-          assert.isTrue( element._requestData.called );
+          assert.isTrue( fetchMixin._requestData.called );
 
           done();
-        }, 10);
+        });
       });
 
     });
@@ -380,69 +387,63 @@
       });
 
       test( "should cache requests", done => {
-        sandbox.stub(cache, "getCache").rejects();
-        sandbox.stub(cache, "putCache").resolves();
+        sandbox.stub(cacheMixin, "getCache").rejects();
+        sandbox.stub(cacheMixin, "putCache").resolves();
         window.fetch.resolves(response);
       
-        element._requestData();
-
-        setTimeout(() => {
-          assert.isTrue( cache.putCache.called );
+        fetchMixin._requestData().then(() => {
+          assert.isTrue( cacheMixin.putCache.called );
 
           done();
-        }, 10);
+        });
       });
 
       test( "should process data on successful requests", done => {
-        sandbox.stub(cache, "getCache").rejects();
-        sandbox.stub(cache, "putCache").resolves();
+        sandbox.stub(cacheMixin, "getCache").rejects();
+        sandbox.stub(cacheMixin, "putCache").resolves();
         window.fetch.resolves(response);
 
-        sandbox.stub(element, "_processData");
+        sandbox.stub(element, "_processWeatherData");
       
-        element._requestData();
-
+        fetchMixin._requestData();
+        
         setTimeout(() => {
-          assert.isTrue( element._processData.called );
-          assert.isTrue( element._processData.calledWith( validXmlData ) );          
+          assert.isTrue( element._processWeatherData.called );
+          assert.isTrue( element._processWeatherData.calledWith( validXmlData ) );          
 
           done();
         }, 10);
       });
 
       test( "should handle request failures", done => {
-        sandbox.stub(cache, "getCache").rejects();
+        sandbox.stub(cacheMixin, "getCache").rejects();
 
         window.fetch.rejects("dsa");
       
-        sandbox.stub(element, "_handleFetchError");
+        sandbox.stub(fetchMixin, "_handleFetchError");
 
-        element._requestData();
-
-        setTimeout(() => {
-          assert.isTrue( element._handleFetchError.called );
+        fetchMixin._requestData().then(() => {
+          assert.isTrue( fetchMixin._handleFetchError.called );
 
           done();
-        }, 10);
+        });
       });
 
       test( "should handle request http response failures", done => {
-        sandbox.stub(cache, "getCache").rejects();
-        sandbox.stub(cache, "putCache").resolves();
+        sandbox.stub(cacheMixin, "getCache").rejects();
+        sandbox.stub(cacheMixin, "putCache").resolves();
 
         response = new Response(validXmlData,{status: 500, headers:{date: new Date()}});
       
         window.fetch.resolves(response);
 
-        sandbox.stub(element, "_handleFetchError");
+        sandbox.stub(fetchMixin, "_handleFetchError");
 
-        element._requestData();
-
-        setTimeout(() => {
-          assert.isTrue( element._handleFetchError.called );
+        fetchMixin._requestData().then(() => {
+          assert.isTrue( fetchMixin._handleFetchError.called );
 
           done();
-        }, 10);
+        });
       });
 
       suite( "data refresh mechanism", () => {
@@ -453,103 +454,104 @@
         });
 
         test( "should use a debounce job for refresh", () => {
-          element._refresh();
+          fetchMixin._refresh();
 
-          assert.isObject( element._refreshDebounceJob );
+          assert.isObject( fetchMixin._refreshDebounceJob );
         });
 
         test( "should handle fetch error and enqueue debouncer", () => {
-          sandbox.stub(element, "_refresh");
+          sandbox.stub(fetchMixin, "_refresh");
+          fetchMixin._requestRetryCount = 0;
 
-          element._handleFetchError();
+          fetchMixin._handleFetchError();
 
-          assert.isTrue( element._weatherRequestRetryCount === 1 );
-          assert.isTrue( element._refresh.called );
-          assert.isTrue( element._refresh.calledWith(1000 * 60) );
+          assert.isTrue( fetchMixin._requestRetryCount === 1 );
+          assert.isTrue( fetchMixin._refresh.called );
+          assert.isTrue( fetchMixin._refresh.calledWith(1000 * 60) );
         });
 
         test( "should debounce and call _getData after interval", () => {
-          sandbox.stub(element, "_getData");
+          sandbox.stub(fetchMixin, "_getData");
 
-          element._handleFetchError();
+          fetchMixin._handleFetchError();
 
-          assert.isFalse( element._getData.called );
-
-          clock.tick(1000 * 30);
-
-          assert.isFalse( element._getData.called );
+          assert.isFalse( fetchMixin._getData.called );
 
           clock.tick(1000 * 30);
-          assert.isTrue( element._getData.called );
+
+          assert.isFalse( fetchMixin._getData.called );
+
+          clock.tick(1000 * 30);
+          assert.isTrue( fetchMixin._getData.called );
         });
 
         test( "should send error request and set API cooldown after 5 failures", () => {
-          sandbox.stub(element, "_refresh");
+          sandbox.stub(fetchMixin, "_refresh");
 
-          element._weatherRequestRetryCount = 5;
-          element._handleFetchError();
+          fetchMixin._requestRetryCount = 5;
+          fetchMixin._handleFetchError();
 
-          assert.isTrue( element._weatherRequestRetryCount === 0 );
-          assert.isTrue( element._refresh.called );
-          assert.isTrue( element._refresh.calledWith(1000 * 60 * 10) );
+          assert.isTrue( fetchMixin._requestRetryCount === 0 );
+          assert.isTrue( fetchMixin._refresh.called );
+          assert.isTrue( fetchMixin._refresh.calledWith(1000 * 60 * 10) );
 
-          assert.deepEqual( logger.log.getCall(0).args, ["error", "request error", {error: null}] );
+          assert.deepEqual( loggerMixin.log.getCall(0).args, ["error", "request error", {error: null}] );
 
         });
 
         test( "should raise 'request-error' on request failures", done => {
-          sandbox.stub(element, "_refresh");
+          sandbox.stub(fetchMixin, "_refresh");
 
-          element._weatherRequestRetryCount = 5;
+          fetchMixin._requestRetryCount = 5;
         
           element.addEventListener("request-error", evt => {
             assert.isTrue(true);
 
-            assert.deepEqual(logger.log.getCall(0).args, ["error", "request error", {error: "error"}]);
+            assert.deepEqual(loggerMixin.log.getCall(0).args, ["error", "request error", {error: "error"}]);
         
             done();
           });
         
-          element._handleFetchError( new Error("error") );
+          fetchMixin._handleFetchError( new Error("error") );
         });
 
         test( "should debounce existing cooldown", () => {
-          sandbox.stub(element, "_getData");
+          sandbox.stub(fetchMixin, "_getData");
 
-          element._refresh( 5000 );
+          fetchMixin._refresh( 5000 );
 
-          element._refresh( 100 );
+          fetchMixin._refresh( 100 );
 
           clock.tick(100);
 
-          assert.isTrue( element._getData.calledOnce );
+          assert.isTrue( fetchMixin._getData.calledOnce );
 
           clock.tick(5000);
 
-          assert.isTrue( element._getData.calledOnce );
+          assert.isTrue( fetchMixin._getData.calledOnce );
         });
 
         test( "should debounce existing cooldown 2", () => {
-          sandbox.stub(element, "_getData");
+          sandbox.stub(fetchMixin, "_getData");
 
-          element._refresh( 100 );
+          fetchMixin._refresh( 100 );
 
-          element._refresh( 5000 );
+          fetchMixin._refresh( 5000 );
 
           clock.tick(100);
 
-          assert.isFalse( element._getData.called );
+          assert.isFalse( fetchMixin._getData.called );
 
           clock.tick(5000);
 
-          assert.isTrue( element._getData.calledOnce );
+          assert.isTrue( fetchMixin._getData.calledOnce );
         });
 
       });
 
     });
 
-    suite( "_processData", () => {
+    suite( "_processWeatherData", () => {
       const validXmlData = "<report><observation temperature=\"12\"/><location/></report>";
       let response;
 
@@ -558,8 +560,8 @@
       });
 
       test( "should make a request and send data-update", done => {
-        sandbox.stub(cache, "getCache").rejects();
-        sandbox.stub(cache, "putCache").resolves();
+        sandbox.stub(cacheMixin, "getCache").rejects();
+        sandbox.stub(cacheMixin, "putCache").resolves();
         window.fetch.resolves(response);
 
         element.addEventListener("data-update", () => {
@@ -568,73 +570,66 @@
           done();
         });
       
-        element._requestData();
+        fetchMixin._requestData();
       });
 
       test( "should log data received only once for not cached requests", done => {
-        sandbox.stub(cache, "getCache").rejects();
-        sandbox.stub(cache, "putCache").resolves();
+        sandbox.stub(cacheMixin, "getCache").rejects();
+        sandbox.stub(cacheMixin, "putCache").resolves();
         window.fetch.resolves(response);
+        fetchMixin._logDataReceived = true;
 
-        element._getData(validXmlData);
+        fetchMixin._getData(validXmlData).then(() => {
+          assert.isTrue(loggerMixin.log.calledOnce);
+          assert.deepEqual(loggerMixin.log.getCall(0).args, ["info", "data received",{cached: false}]);
 
-        setTimeout(() => {
-          assert.isTrue(logger.log.calledOnce);
-          assert.deepEqual(logger.log.getCall(0).args, ["info", "data received",{cached: false}]);
-
-          element._getData(validXmlData);
-
-          setTimeout(() => {
-            assert.isFalse(logger.log.calledTwice);
+          fetchMixin._getData(validXmlData).then(() => {
+            assert.isFalse(loggerMixin.log.calledTwice);
 
             done();
-          },10);
-
-        },10);
+          },);
+        });
       });
 
       test( "should log data received only once for cached requests", done => {
-        sandbox.stub(cache, "getCache").resolves({
+        sandbox.stub(cacheMixin, "getCache").resolves({
           text: () => {
             return Promise.resolve("text");
           }
         });
-        sandbox.stub(element, "_processData");
-        sandbox.stub(element, "_requestData");
+        sandbox.stub(element, "_processWeatherData");
+        sandbox.stub(fetchMixin, "_requestData");
+        fetchMixin._logDataReceived = true;
 
-        element._getData();
+        fetchMixin._getData().then(() => {
+          assert.isTrue(loggerMixin.log.calledOnce);
+          assert.deepEqual(loggerMixin.log.getCall(0).args, ["info", "data received",{cached: true}]);
 
-        setTimeout(() => {
-          assert.isTrue(logger.log.calledOnce);
-          assert.deepEqual(logger.log.getCall(0).args, ["info", "data received",{cached: true}]);
-
-          element._getData(validXmlData);
-
-          setTimeout(() => {
-            assert.isFalse(logger.log.calledTwice);
+          fetchMixin._getData(validXmlData).then(() => {
+            assert.isFalse(loggerMixin.log.calledTwice);
 
             done();
-          }, 10);
-        }, 10);    
+          });
+        });
       });
 
       test( "should enqueue next request for 1 hour", done => {
-        sandbox.stub(cache, "getCache").rejects();
-        sandbox.stub(cache, "putCache").resolves();
-        sandbox.stub(element, "_refresh");
+        sandbox.stub(cacheMixin, "getCache").rejects();
+        sandbox.stub(cacheMixin, "putCache").resolves();
+        sandbox.stub(fetchMixin, "_refresh");
 
         window.fetch.resolves(response);
 
         element.addEventListener("data-update", () => {
           setTimeout(() => {
-            assert.isTrue( element._refresh.called );
-            assert.isTrue( element._refresh.calledWith(60 * 60 * 1000));
+            assert.isTrue( fetchMixin._refresh.called );
+            assert.isTrue( fetchMixin._refresh.calledWith(60 * 60 * 1000));
 
             done();            
           }, 10);
         });
       
-        element._requestData();
+        fetchMixin._requestData();
       });
 
       test( "should raise 'data-error' on invalid data", done => {
@@ -642,37 +637,38 @@
       
         const cache = { match: sandbox.stub().resolves(null), put: sandbox.stub() };
         sandbox.stub(caches, "open").resolves(cache);      
+        fetchMixin._logDataReceived = true;
       
         element.addEventListener("data-error", evt => {
           assert.isTrue(true);
 
-          assert.isTrue( logger.log.calledTwice );
-          assert.deepEqual( logger.log.getCall(0).args, ["info", "data received", {cached: false}] );
-          assert.deepEqual( logger.log.getCall(1).args, ["error", "data error", {error: "Invalid weather report (Error: Report data is missing (<invalid/>))"}] );
+          assert.isTrue( loggerMixin.log.calledTwice );
+          assert.deepEqual( loggerMixin.log.getCall(0).args, ["info", "data received", {cached: false}] );
+          assert.deepEqual( loggerMixin.log.getCall(1).args, ["error", "data error", {error: "Invalid weather report (Error: Report data is missing (<invalid/>))"}] );
       
           done();
         });
       
-        element._requestData();
+        fetchMixin._requestData();
       });
 
       test( "should enqueue next refresh on invalid data", done => {
         window.fetch.resolves(new Response("<invalid/>",{headers:{date: new Date()}}));
-        sandbox.stub(element, "_refresh");
+        sandbox.stub(fetchMixin, "_refresh");
       
         const cache = { match: sandbox.stub().resolves(null) };
         sandbox.stub(caches, "open").resolves(cache);      
       
         element.addEventListener("data-error", evt => {
           setTimeout(() => {
-            assert.isTrue( element._refresh.called );
-            assert.isTrue( element._refresh.calledWith(60 * 60 * 1000));
+            assert.isTrue( fetchMixin._refresh.called );
+            assert.isTrue( fetchMixin._refresh.calledWith(60 * 60 * 1000));
 
             done();            
           }, 10);
         });
       
-        element._requestData();
+        fetchMixin._requestData();
       });
     });
 
@@ -686,25 +682,25 @@
       });
 
       test("should set uptime error when raising data-error", () => {
-        element._sendEvent("data-error");
+        element._sendWeatherEvent("data-error");
         assert.isTrue( element._setUptimeError.called );
         assert.isTrue( element._setUptimeError.calledWith(true) );
       });
 
       test("should set uptime error when raising request-error", () => {
-        element._sendEvent("request-error");
+        element._sendWeatherEvent("request-error");
         assert.isTrue( element._setUptimeError.called );
         assert.isTrue( element._setUptimeError.calledWith(true) );
       });
 
       test("should report no uptime error when sending data-update", () => {
-        element._sendEvent("data-update");
+        element._sendWeatherEvent("data-update");
         assert.isTrue( element._setUptimeError.called );
         assert.isTrue( element._setUptimeError.calledWith(false) );
       });
 
       test("should not change uptime error status on other events", () => {
-        element._sendEvent("configured");
+        element._sendWeatherEvent("configured");
         assert.isFalse( element._setUptimeError.called );
       });
 
