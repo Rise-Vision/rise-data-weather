@@ -65,7 +65,7 @@
       fetchMixin.initFetch({
         retry: 1000 * 60,
         cooldown: 1000 * 60 * 10,
-        refresh: 1000 * 60 * 60,
+        refresh: 1000 * 60 * 30,
         count: 5
       }, handleResponse, handleError );
     });
@@ -341,8 +341,12 @@
     suite( "_getData", () => {
       test( "should get the result from cache", done => {
         sandbox.stub(cacheMixin, "getCache").resolves({
-          text: () => {
-            return Promise.resolve("text");
+          clone: () => {
+            return {
+              text: () => {
+                return Promise.resolve("text");
+              }
+            };
           }
         });
         sandbox.stub(element, "_processWeatherData");
@@ -613,7 +617,7 @@
         });
       });
 
-      test( "should enqueue next request for 1 hour", done => {
+      test( "should enqueue next request for 30 minutes", done => {
         sandbox.stub(cacheMixin, "getCache").rejects();
         sandbox.stub(cacheMixin, "putCache").resolves();
         sandbox.stub(fetchMixin, "_refresh");
@@ -623,7 +627,7 @@
         element.addEventListener("data-update", () => {
           setTimeout(() => {
             assert.isTrue( fetchMixin._refresh.called );
-            assert.isTrue( fetchMixin._refresh.calledWith(60 * 60 * 1000));
+            assert.isTrue( fetchMixin._refresh.calledWith(30 * 60 * 1000));
 
             done();            
           }, 10);
@@ -662,7 +666,7 @@
         element.addEventListener("data-error", evt => {
           setTimeout(() => {
             assert.isTrue( fetchMixin._refresh.called );
-            assert.isTrue( fetchMixin._refresh.calledWith(60 * 60 * 1000));
+            assert.isTrue( fetchMixin._refresh.calledWith(30 * 60 * 1000));
 
             done();            
           }, 10);
