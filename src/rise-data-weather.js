@@ -69,10 +69,14 @@ class RiseDataWeather extends FetchMixin( fetchBase ) {
     super.ready();
 
     super.initFetch({
-      refresh: 1000 * 60 * 30
+      retry: 1000 * 60,
+      cooldown: 1000 * 60 * 10,
+      refresh: 1000 * 60 * 30,
+      count: 5
     }, this._handleResponse, this._handleError );
     super.initCache({
-      name: this.tagName.toLowerCase()
+      name: this.tagName.toLowerCase(),
+      expiry: 1000 * 60 * 60 * 2      
     });
   }
 
