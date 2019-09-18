@@ -168,7 +168,7 @@ class RiseDataWeather extends FetchMixin( fetchBase ) {
 
       this._sendWeatherEvent( RiseDataWeather.EVENT_DATA_UPDATE, this.weatherData );
     } catch ( e ) {
-      super.log( "error", "data error", { error: e.message });
+      super.log( RiseDataWeather.LOG_TYPE_ERROR, "data error", { error: e.message });
 
       this._sendWeatherEvent( RiseDataWeather.EVENT_DATA_ERROR, e );
     }
@@ -190,7 +190,7 @@ class RiseDataWeather extends FetchMixin( fetchBase ) {
         headers: { "X-Requested-With": "rise-data-weather" }
       });
     } else {
-      super.log( "error", message, this.displayAddress );
+      super.log( RiseDataWeather.LOG_TYPE_ERROR, message, this.displayAddress );
 
       this._sendWeatherEvent( RiseDataWeather.EVENT_DATA_ERROR, message );
     }
