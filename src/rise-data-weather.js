@@ -168,7 +168,7 @@ class RiseDataWeather extends FetchMixin( fetchBase ) {
 
       this._sendWeatherEvent( RiseDataWeather.EVENT_DATA_UPDATE, this.weatherData );
     } catch ( e ) {
-      super.log( RiseDataWeather.LOG_TYPE_ERROR, "data error", { error: e.message });
+      super.log( RiseDataWeather.LOG_TYPE_ERROR, "data error", { error: e.message, content: content });
 
       this._sendWeatherEvent( RiseDataWeather.EVENT_DATA_ERROR, e );
     }
