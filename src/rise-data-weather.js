@@ -20,23 +20,21 @@ class RiseDataWeather extends FetchMixin( fetchBase ) {
        */
       scale: {
         type: String,
-        value: "F",
-        observer: "_scaleUpdated"
+        value: "F"
       },
 
       /**
        * The address of the display running this instance of the component.
        */
-      displayAddress: Object,
+      displayAddress: {
+        type: Object,
+        observer: "_computeFullAddress"
+      },
 
       /**
       * The full display address in a single string.
       */
-      fullAddress: {
-        type: String,
-        computed: "_computeFullAddress(displayAddress)",
-        observer: "_fullAddressUpdated"
-      },
+      fullAddress: String,
 
       /**
        * The result of the Weather API.
@@ -84,6 +82,11 @@ class RiseDataWeather extends FetchMixin( fetchBase ) {
     super._init();
   }
 
+  _isDevelopmentEnvironment() {
+    return !(RisePlayerConfiguration && RisePlayerConfiguration.DisplayData &&
+      RisePlayerConfiguration.DisplayData.onDisplayData);
+  }
+
   _isValidAddress( address ) {
     if ( !address ) {
       return false;
@@ -95,31 +98,37 @@ class RiseDataWeather extends FetchMixin( fetchBase ) {
   }
 
   _computeFullAddress( displayAddress ) {
-    if ( !this._isValidAddress( displayAddress )) {
-      return "";
-    }
+    if ( this._isValidAddress( displayAddress )) {
+      let resp = [];
 
-    let resp = [];
-
-    if (( displayAddress.country === "US" || displayAddress.country === "CA" ) && displayAddress.postalCode ) {
-      resp.push( displayAddress.postalCode );
-      resp.push( displayAddress.country );
-    } else {
-      if ( displayAddress.city ) {
-        resp.push( displayAddress.city );
-      }
-      if ( displayAddress.province ) {
-        resp.push( displayAddress.province );
-      }
-      if ( displayAddress.postalCode ) {
+      if (( displayAddress.country === "US" || displayAddress.country === "CA" ) && displayAddress.postalCode ) {
         resp.push( displayAddress.postalCode );
-      }
-      if ( displayAddress.country ) {
         resp.push( displayAddress.country );
+      } else {
+        if ( displayAddress.city ) {
+          resp.push( displayAddress.city );
+        }
+        if ( displayAddress.province ) {
+          resp.push( displayAddress.province );
+        }
+        if ( displayAddress.postalCode ) {
+          resp.push( displayAddress.postalCode );
+        }
+        if ( displayAddress.country ) {
+          resp.push( displayAddress.country );
+        }
       }
-    }
 
-    return resp.join( "," );
+      this.fullAddress = resp.join( "," );
+    } else {
+      let message = "displayAddress is incomplete or missing";
+
+      super.log( RiseDataWeather.LOG_TYPE_ERROR, message, this.displayAddress );
+
+      this._sendWeatherEvent( RiseDataWeather.EVENT_DATA_ERROR, message );
+
+      this.fullAddress = "";
+    }
   }
 
   _onDisplayData( displayData ) {
@@ -144,7 +153,13 @@ class RiseDataWeather extends FetchMixin( fetchBase ) {
   _handleStart() {
     super._handleStart();
 
-    RisePlayerConfiguration.DisplayData.onDisplayData( this._onDisplayData.bind( this ));
+    if( !this._isDevelopmentEnvironment()) {
+      this.fullAddress = "";
+
+      RisePlayerConfiguration.DisplayData.onDisplayData( this._onDisplayData.bind( this ));
+    }
+
+    this._createMethodObserver("_initFetch(fullAddress, scale)", true);
   }
 
   _getUrl() {
@@ -174,25 +189,13 @@ class RiseDataWeather extends FetchMixin( fetchBase ) {
     }
   }
 
-  _scaleUpdated() {
+  _initFetch() {
     if ( this.scale && this.fullAddress ) {
-      this._fullAddressUpdated();
-    }
-  }
-
-  _fullAddressUpdated() {
-    var message = "displayAddress is incomplete or missing";
-
-    if ( this.fullAddress ) {
       this._weatherRequestRetryCount = 0;
 
       super.fetch( this._getUrl(), {
         headers: { "X-Requested-With": "rise-data-weather" }
       });
-    } else {
-      super.log( RiseDataWeather.LOG_TYPE_ERROR, message, this.displayAddress );
-
-      this._sendWeatherEvent( RiseDataWeather.EVENT_DATA_ERROR, message );
     }
   }
 
