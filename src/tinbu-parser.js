@@ -55,7 +55,7 @@ function validateData( body, xmlDoc ) {
     if ( error !== null ) {
       throw new Error( error.textContent );
     } else {
-      throw new Error( `Report data is missing (${body})` );
+      throw new Error( "Report data is missing" );
     }
   }
   return report;
