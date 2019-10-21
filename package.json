@@ -27,7 +27,7 @@
   },
   "homepage": "https://github.com/Rise-Vision/rise-data-weather#readme",
   "dependencies": {
-    "rise-common-component": "git://github.com/Rise-Vision/rise-common-component.git#e2e/coveralls"
+    "rise-common-component": "git://github.com/Rise-Vision/rise-common-component.git#v1.3.0"
   },
   "devDependencies": {
     "eslint": "^5.6.1",
