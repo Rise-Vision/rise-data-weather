@@ -6,3 +6,5 @@ demo/build
 demo/node_modules
 
 npm-debug.log
+
+coverage/
