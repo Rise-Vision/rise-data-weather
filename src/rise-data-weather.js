@@ -83,8 +83,8 @@ class RiseDataWeather extends FetchMixin( fetchBase ) {
   }
 
   _isDevelopmentEnvironment() {
-    return !(RisePlayerConfiguration && RisePlayerConfiguration.DisplayData &&
-      RisePlayerConfiguration.DisplayData.onDisplayData);
+    return !( RisePlayerConfiguration && RisePlayerConfiguration.DisplayData &&
+      RisePlayerConfiguration.DisplayData.onDisplayData );
   }
 
   _isValidAddress( address ) {
@@ -153,13 +153,19 @@ class RiseDataWeather extends FetchMixin( fetchBase ) {
   _handleStart() {
     super._handleStart();
 
-    if( !this._isDevelopmentEnvironment()) {
-      this.fullAddress = "";
+    // Clear full address and reset to trigger observer for the first data retrieval
+    // in the development environment
+    let fullAddress = this.fullAddress;
 
+    this.fullAddress = "";
+
+    this._createMethodObserver( "_initFetch(fullAddress, scale)" );
+
+    if ( !this._isDevelopmentEnvironment()) {
       RisePlayerConfiguration.DisplayData.onDisplayData( this._onDisplayData.bind( this ));
+    } else {
+      this.fullAddress = fullAddress;
     }
-
-    this._createMethodObserver("_initFetch(fullAddress, scale)", true);
   }
 
   _getUrl() {

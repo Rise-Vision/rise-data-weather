@@ -90,42 +90,109 @@
 
     } );
 
+    suite( "_isDevelopmentEnvironment", () => {
+      var risePlayerConfiguration;
+      setup(() => {
+        risePlayerConfiguration = RisePlayerConfiguration;
+      });
+
+      teardown(()=>{
+        RisePlayerConfiguration = risePlayerConfiguration;
+      });
+
+      test( "should be true if RisePlayerConfiguration is missing", () => {
+        RisePlayerConfiguration = undefined;
+
+        assert.isTrue( element._isDevelopmentEnvironment());
+      });
+
+      test( "should be true if DisplayData is missing", () => {
+        RisePlayerConfiguration = {};
+
+        assert.isTrue( element._isDevelopmentEnvironment());
+      });
+
+      test( "should be true if onDisplayData is missing", () => {
+        RisePlayerConfiguration = {
+          DisplayData: {}
+        };
+
+        assert.isTrue( element._isDevelopmentEnvironment());
+      });
+
+      test( "should be false if displayData can be retrieved", () => {
+        assert.isFalse( element._isDevelopmentEnvironment());
+      });
+
+    });
+
     suite( "_computeFullAddress", () => {
+      test( "should send an error event when address is not valid", () => {
+        sandbox.stub(element, "_sendWeatherEvent");
+
+        element._computeFullAddress({});
+
+        assert.isTrue( element._sendWeatherEvent.called );
+        assert.equal(element.fullAddress, "");
+      } );
 
       test( "should return postal code, country for US and CA", () => {
-        assert.equal(element._computeFullAddress( { city: "Toronto", province: "ON", postalCode: "M4M 1A1", country: "CA"} ), "M4M 1A1,CA");
-        assert.equal(element._computeFullAddress( { city: "New York", province: "NY", postalCode: "14202", country: "US"} ), "14202,US");        
+        element._computeFullAddress({ city: "Toronto", province: "ON", postalCode: "M4M 1A1", country: "CA"});
+        assert.equal(element.fullAddress, "M4M 1A1,CA");
+        
+        element._computeFullAddress({ city: "New York", province: "NY", postalCode: "14202", country: "US"});
+        assert.equal(element.fullAddress, "14202,US");        
       });
 
       test( "should return city,province,postalCode,country for other countries", () => {
-        assert.equal(element._computeFullAddress( { city: "Santos", province: "SP", postalCode: 11045, country: "BR"} ), "Santos,SP,11045,BR");
+        element._computeFullAddress({ city: "Santos", province: "SP", postalCode: 11045, country: "BR"});
+        assert.equal(element.fullAddress, "Santos,SP,11045,BR");
       });
 
       test( "should allow city, country", () => {
-        assert.equal(element._computeFullAddress( { city: "Toronto", country: "CA"} ), "Toronto,CA");
-        assert.equal(element._computeFullAddress( { city: "Toronto", province: "ON", country: "CA"} ), "Toronto,ON,CA");
+        element._computeFullAddress({ city: "Toronto", country: "CA"});
+        assert.equal(element.fullAddress, "Toronto,CA");
+
+        element._computeFullAddress({ city: "Toronto", province: "ON", country: "CA"});
+        assert.equal(element.fullAddress, "Toronto,ON,CA");
       });
 
       test( "should allow zip/postal code", () => {
-        assert.equal(element._computeFullAddress( { postalCode: "M4M 1A1"} ), "M4M 1A1");
-        assert.equal(element._computeFullAddress( { postalCode: 14202} ), "14202");
-        assert.equal(element._computeFullAddress( { city: "Toronto", postalCode: "M4M 1A1"} ), "Toronto,M4M 1A1");
+        element._computeFullAddress({ postalCode: "M4M 1A1"});
+        assert.equal(element.fullAddress, "M4M 1A1");
+
+        element._computeFullAddress({ postalCode: 14202});
+        assert.equal(element.fullAddress, "14202");
+
+        element._computeFullAddress({ city: "Toronto", postalCode: "M4M 1A1"});
+        assert.equal(element.fullAddress, "Toronto,M4M 1A1");
       });
 
       test( "should return empty string in other cases", () => {
-        assert.equal(element._computeFullAddress( { city: "Santos", province: "SP"} ), "");
-        assert.equal(element._computeFullAddress( { province: "SP", country: "BR"} ), "");
-        assert.equal(element._computeFullAddress( { country: "BR"} ), "");
-        assert.equal(element._computeFullAddress( { province: "SP"} ), "");
+        element._computeFullAddress({ city: "Santos", province: "SP"});
+        assert.equal(element.fullAddress, "");
+
+        element._computeFullAddress({ province: "SP", country: "BR"});
+        assert.equal(element.fullAddress, "");
+
+        element._computeFullAddress({ country: "BR"});
+        assert.equal(element.fullAddress, "");
+
+        element._computeFullAddress({ province: "SP"});
+        assert.equal(element.fullAddress, "");
       });
 
       test( "should return empty string if arguments are not provided", () => {
-        assert.equal(element._computeFullAddress( undefined ), "");
-        assert.equal(element._computeFullAddress( {} ), "");
+        element._computeFullAddress(undefined);
+        assert.equal(element.fullAddress, "");
+
+        element._computeFullAddress({});
+        assert.equal(element.fullAddress, "");
       });
 
       test( "should ignore other fields", () => {
-        assert.equal(element._computeFullAddress( { street: "Street", city: "Toronto", province: "ON", country: "CA"} ), "Toronto,ON,CA");
+        element._computeFullAddress({ street: "Street", city: "Toronto", province: "ON", country: "CA"});
+        assert.equal(element.fullAddress, "Toronto,ON,CA");
       });
     } );
 
@@ -169,12 +236,60 @@
     });
 
     suite( "'start' event", () => {
+      test( "should not observe properties by default", () => {
+        sandbox.stub(element, "_initFetch");
+
+        element.fullAddress = "updatedAddress";
+
+        assert.isFalse( element._initFetch.called );
+
+        element.scale = "F";
+        
+        assert.isFalse( element._initFetch.called );
+      } );
+
+      test( "should initialize observer", () => {
+        element.fullAddress = "fullAddress";
+        element.scale = "C";
+        sandbox.stub(element, "_initFetch");
+
+        element.dispatchEvent( new CustomEvent( "start" ) );
+
+        assert.isTrue( element._initFetch.called );
+
+        element._initFetch.reset();
+
+        element.fullAddress = "updatedAddress";
+
+        assert.isTrue( element._initFetch.calledOnce );
+
+        element.scale = "F";
+        
+        assert.isTrue( element._initFetch.calledTwice );
+      } );
+
+      test( "should not retrieve displayAddress in development environment", () => {
+        element.fullAddress = "fullAddress";
+        sandbox.stub(element, "_isDevelopmentEnvironment").returns(true);
+        sandbox.stub(element, "_initFetch");
+        sandbox.spy(RisePlayerConfiguration.DisplayData, "onDisplayData");
+
+        element.dispatchEvent( new CustomEvent( "start" ) );
+      
+        assert.isFalse( RisePlayerConfiguration.DisplayData.onDisplayData.called );
+        assert.equal( element.fullAddress, "fullAddress" );
+        assert.isTrue( element._initFetch.called );
+        assert.deepEqual( loggerMixin.log.getCall(0).args, ["info", "start received"] );
+      } );
+
       test( "should retrieve displayAddress", () => {
+        element.fullAddress = "fullAddress";
         sandbox.spy(RisePlayerConfiguration.DisplayData, "onDisplayData");
 
         element.dispatchEvent( new CustomEvent( "start" ) );
       
         assert.isTrue( RisePlayerConfiguration.DisplayData.onDisplayData.called );
+        assert.notEqual( element.fullAddress, "fullAddress" );
         assert.deepEqual( loggerMixin.log.getCall(0).args, ["info", "start received"] );
       } );
 
@@ -270,70 +385,44 @@
 
     });
 
-    suite( "_scaleUpdated", () => {
-      test( "should notify when the scale is updated", () => {
-        sandbox.stub(element, "_scaleUpdated");
-
+    suite( "_initFetch", () => {
+      test( "should not call refresh when fullAddress and scale are not present", () => {
+        element.fullAddress = "";
         element.scale = "C";
 
-        assert.isTrue( element._scaleUpdated.called );
-      } );
-
-      test( "should call _fullAddressUpdated when scale & address are valid", () => {
-        sandbox.stub(element, "_refresh");
-
-        element.displayAddress = {city: "Toronto", country: "CA"};
-        sandbox.stub(element, "_fullAddressUpdated");
-
-        element.scale = "C";
-
-        assert.isTrue( element._fullAddressUpdated.called );
-      } );
-
-      test( "should not call _fullAddressUpdated when address is invalid", () => {
-        sandbox.stub(element, "_fullAddressUpdated");
-
-        element.scale = "C";
-
-        assert.isFalse( element._fullAddressUpdated.called );
-      } );
-
-    });
-
-    suite( "_fullAddressUpdated", () => {
-      test( "should notify when fullAddress is updated", () => {
-        sandbox.stub(element, "_fullAddressUpdated");
-
-        element.displayAddress = {};
-
-        assert.isTrue( element._fullAddressUpdated.called );
-      } );
-
-      test( "should call refresh when fullAddress is valid", () => {
         sandbox.stub(fetchMixin, "_refresh");
 
-        element.displayAddress = {city: "Toronto", country: "CA"};
+        element._initFetch();
+
+        element.fullAddress = "fullAddress";
+        element.scale = "";
+
+        element._initFetch();
+
+        assert.isFalse( fetchMixin._refresh.called );
+      } );
+
+      test( "should call refresh when fullAddress and scale are present", () => {
+        element.fullAddress = "fullAddress";
+        element.scale = "C";
+
+        sandbox.stub(fetchMixin, "_refresh");
+
+        element._initFetch();
 
         assert.isTrue( fetchMixin._refresh.called );
       } );
 
       test( "should reset requestRetryCount count", () => {
+        element.fullAddress = "fullAddress";
+        element.scale = "C";
+
         element._requestRetryCount = 3;
         sandbox.stub(fetchMixin, "_refresh");
 
-        element.displayAddress = {city: "Toronto", country: "CA"};
+        element._initFetch();
 
         assert.equal( element._requestRetryCount, 0 );
-      } );
-
-      test( "should send an error event when fullAddress is not valid", () => {
-        sandbox.stub(fetchMixin, "_refresh");
-        sandbox.stub(element, "_sendWeatherEvent");
-
-        element.displayAddress = {};
-
-        assert.isTrue( element._sendWeatherEvent.called );
-        assert.isFalse( fetchMixin._refresh.called );
       } );
 
     });
