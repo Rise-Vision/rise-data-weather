@@ -185,6 +185,7 @@ This component receives the following list of attributes:
 - **label** ( string ): An optional label key for the text that will appear in the template editor. See 'Labels' section above.
 - **scale** (string) “F”/ “C”. Sets Fahrenheit or Celsius as temperature scale. Defaults to “F”.
 - **non-editable** ( empty / optional ): If present, it indicates this component is not available for customization in the template editor.
+- **full-address** ( string / optional ): If present, will retrieve data based on that address in the Development environment, without requiring `RisePlayerConfiguration` to be mocked. This parameter will be ignored if the address can be retrieved on a Display or in the Editor.
 
 ### Events
 
