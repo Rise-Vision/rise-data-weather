@@ -171,9 +171,7 @@ class RiseDataWeather extends FetchMixin( fetchBase ) {
   _getUrl() {
     let url = weatherServerConfig.providerURL;
 
-    if ( this.scale == "C" ) {
-      url += "&metric=true";
-    }
+    url += "&metric=" + ( this.scale == "C" ? "true" : "false" );
     url += "&name=" + encodeURIComponent( this.fullAddress );
 
     return url;
