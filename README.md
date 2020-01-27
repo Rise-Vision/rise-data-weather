@@ -161,6 +161,13 @@ When listening for the "data-update" event, the `event.detail` object returned i
 
 ```
 
+The data object has two main parts: `observation` and `location.forecasts`.
+
+**Observation** represents the most recent measured weather information.
+
+**Forecasts** holds the weather forecast for the next 7 days. Until noon, the forecast will present current day as day 1, and will transition to show day 1 as the next days during the latter half of the day, based on the local time. As a note, all U.S. locations transition to the next day at the same time no matter the timezone (across the Continental U.S.). The general rule is that if the forecast is requested in the afternoon or evening, day 1 of the forecast presents the next day.
+
+
 ### Labels
 
 The component may define a 'label' attribute that defines the text that will appear for this instance in the template editor.
@@ -228,6 +235,8 @@ Whenever the cached data is retrieved, the component checks the date header and 
 ### Weather Data Provider (Tinbu API) Requests
 
 Currently, Weather Component uses the wx_current_extended API from Tinbu. It provides current weather and 7 days forecast from a single request.
+
+Detailed documentation can be found [here](https://clients.customweather.com/APIDOCS/).
 
 #### Location
 On a real Display, the API is called using the location provided by the Display address (city, state, country) configured in the Display Settings page via RisePlayerConfiguration object. If address is not available, it will fallback to the Display’s zip code, when provided. 
