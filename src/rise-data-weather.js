@@ -46,17 +46,6 @@ class RiseDataWeather extends FetchMixin( fetchBase ) {
     }
   }
 
-  // Event name constants
-  static get EVENT_DATA_UPDATE() {
-    return "data-update";
-  }
-  static get EVENT_DATA_ERROR() {
-    return "data-error";
-  }
-  static get EVENT_REQUEST_ERROR() {
-    return "request-error";
-  }
-
   constructor() {
     super();
 
