@@ -7,7 +7,7 @@
     "prebuild": "eslint . && ./node_modules/rise-common-component/scripts/create_config.sh prod rise-data-weather",
     "build": "polymer build && ./node_modules/rise-common-component/scripts/extract-source.sh rise-data-weather",
     "pretest": "eslint . && ./node_modules/rise-common-component/scripts/create_config.sh test rise-data-weather",
-    "test": "polymer test --root ./ --config-file ./node_modules/rise-common-component/wct.conf.js",
+    "test": "polymer test",
     "pretty": "eslint . --fix"
   },
   "repository": {
@@ -31,8 +31,10 @@
     "rise-common-component": "git://github.com/Rise-Vision/rise-common-component.git#v1.3.1"
   },
   "devDependencies": {
+    "coveralls": "3.0.6",
     "eslint": "^5.6.1",
-    "eslint-config-idiomatic": "^4.0.0"
+    "eslint-config-idiomatic": "^4.0.0",
+    "wct-istanbul": "^0.14.3"
   },
   "resolutions": {
     "braces": "^2.3.1"
