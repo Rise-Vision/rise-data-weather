@@ -1,0 +1,27 @@
+{
+  "verbose": true,
+  "npm": true,
+  "moduleResolution": "node",
+  "plugins": {
+    "local": {
+      "browsers": ["chrome"]
+    },
+    "istanbul": {
+      "reporters": ["text", "text-summary", "lcov"],
+      "include": [
+        "**/src/**/*.js"
+      ],
+      "exclude": [
+        "**/test/**"
+      ],
+      "thresholds": {
+        "global": {
+          "branches": 95,
+          "lines": 95,
+          "functions": 95,
+          "statements": 95
+        }
+      }
+    }
+  }
+}
