@@ -3,7 +3,6 @@
   "version": "1.0.1",
   "description": "Web component for retrieving weather data on a Rise Vision Template page",
   "scripts": {
-    "preinstall": "npx npm-force-resolutions || true",
     "prebuild": "eslint . && ./node_modules/rise-common-component/scripts/create_config.sh prod rise-data-weather",
     "build": "polymer build && ./node_modules/rise-common-component/scripts/extract-source.sh rise-data-weather",
     "pretest": "eslint . && ./node_modules/rise-common-component/scripts/create_config.sh test rise-data-weather",
@@ -28,15 +27,12 @@
   },
   "homepage": "https://github.com/Rise-Vision/rise-data-weather#readme",
   "dependencies": {
-    "rise-common-component": "git://github.com/Rise-Vision/rise-common-component.git#v1.3.1"
+    "rise-common-component": "git://github.com/Rise-Vision/rise-common-component.git#v1.5.2"
   },
   "devDependencies": {
     "coveralls": "3.0.6",
     "eslint": "^5.6.1",
     "eslint-config-idiomatic": "^4.0.0",
     "wct-istanbul": "^0.14.3"
-  },
-  "resolutions": {
-    "braces": "^2.3.1"
   }
 }
