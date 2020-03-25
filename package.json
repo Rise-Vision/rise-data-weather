@@ -30,9 +30,6 @@
     "rise-common-component": "git://github.com/Rise-Vision/rise-common-component.git#v1.5.2"
   },
   "devDependencies": {
-    "coveralls": "3.0.6",
-    "eslint": "^5.6.1",
-    "eslint-config-idiomatic": "^4.0.0",
-    "wct-istanbul": "^0.14.3"
+    "eslint-config-idiomatic": "^4.0.0"
   }
 }
