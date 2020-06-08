@@ -432,6 +432,7 @@
         sandbox.stub(cacheMixin, "getCache").resolves({
           clone: () => {
             return {
+              url: "",
               text: () => {
                 return Promise.resolve("text");
               }
