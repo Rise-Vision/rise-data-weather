@@ -211,7 +211,7 @@ class RiseDataWeather extends FetchMixin( fetchBase ) {
 
   _processSearchData( content ) {
     try {
-      this.locationId = parseTinbuSearch( content );
+      this.locationId = parseTinbuSearch( content, this.displayAddress );
     } catch ( e ) {
       super.log( RiseDataWeather.LOG_TYPE_ERROR, "search error", { error: e.message, content: content });
     }
