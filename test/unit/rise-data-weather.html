@@ -428,7 +428,32 @@
     });
 
     suite( "_getData", () => {
-      test( "should get the result from cache", done => {
+      test( "should get the result from cache - search response", done => {
+        sandbox.stub(cacheMixin, "getCache").resolves({
+          clone: () => {
+            return {
+              url: "...&product=search...",
+              text: () => {
+                return Promise.resolve("text");
+              }
+            };
+          }
+        });
+        sandbox.stub(element, "_processSearchData");
+        sandbox.stub(fetchMixin, "_requestData");
+
+        fetchMixin._getData().then(() => {
+          assert.isTrue( cacheMixin.getCache.called );
+          assert.isTrue( element._processSearchData.called );
+          assert.isTrue( element._processSearchData.calledWith("text") );          
+
+          assert.isFalse( fetchMixin._requestData.called );
+
+          done();
+        });
+      });
+
+      test( "should get the result from cache - weather response", done => {
         sandbox.stub(cacheMixin, "getCache").resolves({
           clone: () => {
             return {
@@ -463,13 +488,24 @@
         element._getData().then(() => {
           assert.isTrue( cacheMixin.getCache.called );
           assert.isFalse( element._processWeatherData.called );
-
           assert.isTrue( fetchMixin._requestData.called );
 
           done();
         });
       });
 
+    });
+
+    suite( "_processSearchData - search", () => {
+
+      test( "should call fetch with weather url", () => {
+        sandbox.stub(fetchMixin, "fetch");
+
+        element._processSearchData();
+
+        assert.isTrue( fetchMixin.fetch.called );
+        assert.isTrue(fetchMixin.fetch.getCall(0).args[0].includes("&product=current_extended"));
+      });
     });
 
     suite( "_requestData", () => {

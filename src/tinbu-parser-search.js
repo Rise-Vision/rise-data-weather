@@ -22,11 +22,12 @@ function extractLocationId( xmlDoc, displayAddress ) {
     const score = getAddressMatchigScore( element, displayAddress );
 
     if ( !result || score > bestScore ) {
+      bestScore = score;
       result = element.getAttribute( "id" );
     }
   }
 
-  if ( result === null ) {
+  if ( !result ) {
     throw new Error( "city data is missing" );
   }
 
