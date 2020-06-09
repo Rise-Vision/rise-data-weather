@@ -7,6 +7,7 @@ import { FetchMixin } from "rise-common-component/src/fetch-mixin.js";
 import { weatherServerConfig } from "./rise-data-weather-config.js";
 import { version } from "./rise-data-weather-version.js";
 import { parseTinbu } from "./tinbu-parser.js";
+import { parseTinbuSearch } from "./tinbu-parser-search.js";
 
 const fetchBase = CacheMixin( RiseElement );
 
@@ -35,6 +36,11 @@ class RiseDataWeather extends FetchMixin( fetchBase ) {
       * The full display address in a single string.
       */
       fullAddress: String,
+
+      /**
+      * The City ID returned by search API.
+      */
+      locationId: String,
 
       /**
        * The result of the Weather API.
@@ -87,6 +93,8 @@ class RiseDataWeather extends FetchMixin( fetchBase ) {
   }
 
   _computeFullAddress( displayAddress ) {
+    this.locationId = null;
+
     if ( this._isValidAddress( displayAddress )) {
       let resp = [];
 
@@ -157,11 +165,30 @@ class RiseDataWeather extends FetchMixin( fetchBase ) {
     }
   }
 
-  _getUrl() {
+  _getWeatherUrl() {
     let url = weatherServerConfig.providerURL;
 
+    url += "&product=current_extended";
     url += "&metric=" + ( this.scale == "C" ? "true" : "false" );
-    url += "&name=" + encodeURIComponent( encodeURIComponent( this.fullAddress ));
+    if ( this.locationId ) {
+      url += "&id=" + encodeURIComponent( encodeURIComponent( this.locationId ));
+    } else {
+      url += "&name=" + encodeURIComponent( encodeURIComponent( this.fullAddress ));
+    }
+
+    return url;
+  }
+
+  _getSearchUrl() {
+    let url = weatherServerConfig.providerURL;
+
+    url += "&version=2.0";
+    url += "&product=search";
+    // encodeURIComponent only once to get better results.
+    // For example full address "Terrey Hills,NSW,2048,AU"
+    // if encoded once, returns 1 result which is exact match.
+    // If encoded twice, then returns multiple results.
+    url += "&search=" + encodeURIComponent( this.fullAddress );
 
     return url;
   }
@@ -182,18 +209,35 @@ class RiseDataWeather extends FetchMixin( fetchBase ) {
     }
   }
 
+  _processSearchData( content ) {
+    try {
+      this.locationId = parseTinbuSearch( content, this.displayAddress );
+    } catch ( e ) {
+      super.log( RiseDataWeather.LOG_TYPE_ERROR, "search error", { error: e.message, content: content });
+    }
+
+    //initiate weather request regardless of the Search results
+    super.fetch( this._getWeatherUrl(), {
+      headers: { "X-Requested-With": "rise-data-weather" }
+    });
+  }
+
   _initFetch() {
     if ( this.scale && this.fullAddress ) {
-      this._weatherRequestRetryCount = 0;
-
-      super.fetch( this._getUrl(), {
+      super.fetch( this._getSearchUrl(), {
         headers: { "X-Requested-With": "rise-data-weather" }
       });
     }
   }
 
   _handleResponse( resp ) {
-    resp.text().then( this._processWeatherData.bind( this ));
+
+    if ( resp.url.includes( "&product=search" )) {
+      resp.text().then( this._processSearchData.bind( this ));
+
+    } else {
+      resp.text().then( this._processWeatherData.bind( this ));
+    }
   }
 
   _handleError() {

@@ -1,0 +1,64 @@
+<!doctype html>
+
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <script src="../../node_modules/@webcomponents/webcomponentsjs/webcomponents-loader.js"></script>
+  <script src="../../node_modules/@polymer/test-fixture/test-fixture.js"></script>
+  <script src="../../node_modules/mocha/mocha.js"></script>
+  <script src="../../node_modules/chai/chai.js"></script>
+  <script src="../../node_modules/wct-mocha/wct-mocha.js"></script>
+  <script src="../../node_modules/sinon/pkg/sinon.js"></script>
+
+  
+</head>
+<body>
+
+<script type="module">
+  import * as tinbuSearch from '../../src/tinbu-parser-search.js';
+  import { searchXmlOneResult, searchXmlMultipleResult } from '../data/search.js';
+
+  suite("tinbu-parser-search", () => {
+
+    suite( "find location", () => {
+      test( "should find exact location", () => {
+        const displayAddress = {country: "AU", province: "NSW", city: "Terry Hills"};
+
+        const result = tinbuSearch.parseTinbuSearch(searchXmlMultipleResult, displayAddress);
+        assert.equal(result, "gn2147035");
+      });
+
+      test( "should find best location when city name does not match", () => {
+        const incorrectCityName = "Terrie Hills";
+        const displayAddress = {country: "AU", province: "NSW", city: incorrectCityName};
+
+        let result = tinbuSearch.parseTinbuSearch(searchXmlMultipleResult, displayAddress);
+        assert.equal(result, "gn2147035");
+      });
+
+      test( "should ignore case", () => {
+        const displayAddress = {country: " Au ", province: " NsW ", city: "TERRY hills "};
+
+        let result = tinbuSearch.parseTinbuSearch(searchXmlMultipleResult, displayAddress);
+        assert.equal(result, "gn2147035");
+      });
+
+      test( "should return first entry if serach returns only 1 result", () => {
+        const displayAddress = {country: "something", province: "something", city: "something"};
+
+        let result = tinbuSearch.parseTinbuSearch(searchXmlOneResult, displayAddress);
+        assert.equal(result, "gn2147035");
+      });
+
+      test( "should throw error on invalid data" , () => {
+        assert.throws(() => tinbuSearch.parseTinbuSearch("<empty-xml/>",{}), "Invalid search result (Error: city data is missing)");
+      });
+
+    });
+  });
+</script>
+
+</body>
+</html>
