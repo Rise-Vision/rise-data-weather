@@ -234,9 +234,17 @@ Whenever the cached data is retrieved, the component checks the date header and 
 
 ### Weather Data Provider (Tinbu API) Requests
 
-Currently, Weather Component uses the wx_current_extended API from Tinbu. It provides current weather and 7 days forecast from a single request.
+Currently, Weather Component uses the following Tinbu API methods:
+- `search` to find location ID.
+- `current_extended` to get the current weather and 7 days forecast in one request.
 
 Detailed documentation can be found [here](https://clients.customweather.com/APIDOCS/).
+
+If you need to change `weatherServerConfig.providerURL`, you can use the following percent encoding tools:
+```
+2tap.com/javascript-percent-encoder
+onlineasciitools.com/url-encode-ascii
+```
 
 #### Location
 On a real Display, the API is called using the location provided by the Display address (city, state, country) configured in the Display Settings page via RisePlayerConfiguration object. If address is not available, it will fallback to the Display’s zip code, when provided. 
