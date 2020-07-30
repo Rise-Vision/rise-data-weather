@@ -220,7 +220,7 @@ In every case, examine event-details entry and the other event fields for more i
 
 Once configured, the component will wait for the `start` event before requesting data and start sending events.
 
-On `start` event received, if a non-expired cached data is available the component will immediately send a `data-update` event and wait `2 hours` to trigger a new data refresh.
+On `start` event received, if a non-expired cached data is available the component will immediately send a `data-update` event and wait `30 minutes` to trigger a new data refresh.
 
 To refresh the weather data, the component will request the data from the provider with a `60 seconds timeout` and will retry it `5 times`. Failing to receive a response, a `request-error` event will be fired and the component will wait `10 minutes` before trying to refresh the data again.
 
