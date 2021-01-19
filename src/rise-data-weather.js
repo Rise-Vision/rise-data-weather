@@ -120,7 +120,7 @@ class RiseDataWeather extends FetchMixin( fetchBase ) {
     } else {
       let message = "displayAddress is incomplete or missing";
 
-      super.log( RiseDataWeather.LOG_TYPE_ERROR, message, this.displayAddress );
+      super.log( RiseDataWeather.LOG_TYPE_ERROR, message, { errorCode: "E000000044" }, this.displayAddress );
 
       this._sendWeatherEvent( RiseDataWeather.EVENT_DATA_ERROR, message );
 
@@ -203,7 +203,7 @@ class RiseDataWeather extends FetchMixin( fetchBase ) {
 
       this._sendWeatherEvent( RiseDataWeather.EVENT_DATA_UPDATE, this.weatherData );
     } catch ( e ) {
-      super.log( RiseDataWeather.LOG_TYPE_ERROR, "data error", { error: e.message, content: content });
+      super.log( RiseDataWeather.LOG_TYPE_ERROR, "data error", { errorCode: "E000000045" }, { error: e.message, content: content });
 
       this._sendWeatherEvent( RiseDataWeather.EVENT_DATA_ERROR, e );
     }
@@ -213,7 +213,7 @@ class RiseDataWeather extends FetchMixin( fetchBase ) {
     try {
       this.locationId = parseTinbuSearch( content, this.displayAddress );
     } catch ( e ) {
-      super.log( RiseDataWeather.LOG_TYPE_ERROR, "search error", { error: e.message, content: content });
+      super.log( RiseDataWeather.LOG_TYPE_ERROR, "search error", { errorCode: "E000000046" }, { error: e.message, content: content });
     }
 
     //initiate weather request regardless of the Search results
