@@ -625,7 +625,7 @@
           assert.isTrue( fetchMixin._refresh.called );
           assert.isTrue( fetchMixin._refresh.calledWith(1000 * 60 * 10) );
 
-          assert.deepEqual( loggerMixin.log.getCall(0).args, ["error", "request error", {error: null}] );
+          assert.deepEqual( loggerMixin.log.getCall(0).args, ["error", "request error", {errorCode: "E000000037"}, {error: null}] );
 
         });
 
@@ -637,7 +637,7 @@
           element.addEventListener("request-error", evt => {
             assert.isTrue(true);
 
-            assert.deepEqual(loggerMixin.log.getCall(0).args, ["error", "request error", {error: "error"}]);
+            assert.deepEqual(loggerMixin.log.getCall(0).args, ["error", "request error", {errorCode: "E000000037"}, {error: "error"}]);
         
             done();
           });
@@ -774,7 +774,7 @@
 
           assert.isTrue( loggerMixin.log.calledTwice );
           assert.deepEqual( loggerMixin.log.getCall(0).args, ["info", "data received", {cached: false}] );
-          assert.deepEqual( loggerMixin.log.getCall(1).args, ["error", "data error", {error: "Invalid weather report (Error: Report data is missing)", content: "<invalid/>"}] );
+          assert.deepEqual( loggerMixin.log.getCall(1).args, ["error", "data error", {errorCode: "E000000045"}, {error: "Invalid weather report (Error: Report data is missing)", content: "<invalid/>"}] );
       
           done();
         });
