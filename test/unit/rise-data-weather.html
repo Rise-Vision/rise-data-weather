@@ -711,7 +711,7 @@
 
         fetchMixin._getData(validXmlData).then(() => {
           assert.isTrue(loggerMixin.log.calledOnce);
-          assert.deepEqual(loggerMixin.log.getCall(0).args, ["info", "data received",{cached: false}]);
+          assert.deepEqual(loggerMixin.log.getCall(0).args, ["info", "data received", null, {cached: false}]);
 
           fetchMixin._getData(validXmlData).then(() => {
             assert.isFalse(loggerMixin.log.calledTwice);
@@ -733,7 +733,7 @@
 
         fetchMixin._getData().then(() => {
           assert.isTrue(loggerMixin.log.calledOnce);
-          assert.deepEqual(loggerMixin.log.getCall(0).args, ["info", "data received",{cached: true}]);
+          assert.deepEqual(loggerMixin.log.getCall(0).args, ["info", "data received", null, {cached: true}]);
 
           fetchMixin._getData(validXmlData).then(() => {
             assert.isFalse(loggerMixin.log.calledTwice);
@@ -773,7 +773,7 @@
           assert.isTrue(true);
 
           assert.isTrue( loggerMixin.log.calledTwice );
-          assert.deepEqual( loggerMixin.log.getCall(0).args, ["info", "data received", {cached: false}] );
+          assert.deepEqual( loggerMixin.log.getCall(0).args, ["info", "data received", null, {cached: false}] );
           assert.deepEqual( loggerMixin.log.getCall(1).args, ["error", "data error", {errorCode: "E000000045"}, {error: "Invalid weather report (Error: Report data is missing)", content: "<invalid/>"}] );
       
           done();
