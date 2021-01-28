@@ -1,21 +1,33 @@
 # Weather Data Web Component [![CircleCI](https://circleci.com/gh/Rise-Vision/rise-data-weather/tree/master.svg?style=svg)](https://circleci.com/gh/Rise-Vision/workflows/rise-data-weather/tree/master) [![Coverage Status](https://coveralls.io/repos/github/Rise-Vision/rise-data-weather/badge.svg?branch=master)](https://coveralls.io/github/Rise-Vision/rise-data-weather?branch=master)
 
 ## Introduction
-
 `rise-data-weather` is a Polymer 3 Web Component that retrieves licensed Weather data.
 
-Instructions for demo page here:
-https://github.com/Rise-Vision/rise-data-weather/blob/master/demo/README.md
+## Usage For Designers
+The below illustrates simple usage of the component.
+A complete setup of the component can be found [here](https://github.com/Rise-Vision/html-template-library/tree/master/example-weather-component).
 
-## Usage
+### Integration in a Template
+#### HTML
+Add a reference to the component in the `<head>` section of **template.html**.
+```
+<script src="https://widgets.risevision.com/beta/components/rise-data-weather/1/rise-data-weather.js"></script>
+```
 
+Add an instance of the component to `<body>` section of **template.html**.
+```
+  <rise-data-weather
+      id="weather01"
+      label="Weather"
+      scale="C"
+    </rise-data-weather>
+```
+
+
+### JS
 The below illustrates simple usage of the component and listening to the `rise-components-ready` event to initiate. This is required in order to know that the component has been imported to the page. See the demo section in this repo for a full working example of an HTML page using the component which will illustrate required imports in the `<head>` of the page.
 
-### Example
-
 ```
-  <body>
-    <script>
       function configureComponents( evt ) {
         const start = new CustomEvent( "start" ),
         	weather01 = document.querySelector('#rise-data-weather-01');
@@ -43,20 +55,30 @@ The below illustrates simple usage of the component and listening to the `rise-c
       }
 
       window.addEventListener( "rise-components-ready", configureComponents);
-    </script>
 
-    <rise-data-weather
-      id="weather01"
-      label="Weather"
-      scale="C"
-    </rise-data-weather>
-...
-
-  </body>
 ```
 
-### Data Object
+#### package.json
+```
+"dependencies": {
+    "@polymer/polymer": "3.1.0",
+    "@webcomponents/webcomponentsjs": "^2.1.1"
+  },
+ ``` 
+ 
+#### Build and Test Locally in Browswer 
+Execute the following commands in Terminal and preview template.html in browser using a simple server. example: http://localhost:8081/build/prod/src/template.html
 
+```
+npm install
+npm install -g polymer-cli@1.9.7
+npm run build
+python -m SimpleHTTPServer 8081
+```
+For more specifics please see: HTML Template - Build and Test Locally in Browser Documentation. 
+https://docs.google.com/document/d/1_xgKe790ZuweDVg-Abj3032an6we7YLH_lQPpe-M88M/edit#bookmark=id.21c68d5f8a7c
+
+### Data Object
 When listening for the "data-update" event, the `event.detail` object returned is an object of the following format:
 
 ```
@@ -257,14 +279,15 @@ For a sample set of weather icons, please download [this file](https://drive.goo
 
 For a complete list of `icon_name` results, please refer to [this file](https://drive.google.com/open?id=18r4q5oPadxgKw2c5TlclFnP2ilLf-FDB).
 
-
-## Built With
+## Development
+### Built With
 - [Polymer 3](https://www.polymer-project.org/)
 - [Polymer CLI](https://github.com/Polymer/tools/tree/master/packages/cli)
 - [WebComponents Polyfill](https://www.webcomponents.org/polyfills/)
 - [npm](https://www.npmjs.org)
 
-## Development
+Instructions for demo page here:
+https://github.com/Rise-Vision/rise-data-weather/blob/master/demo/README.md
 
 ### Local Development Build
 Clone this repo and change into this project directory.
