@@ -1,6 +1,6 @@
 {
   "name": "rise-data-weather",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "Web component for retrieving weather data on a Rise Vision Template page",
   "scripts": {
     "prebuild": "eslint . && ./node_modules/rise-common-component/scripts/create_config.sh prod rise-data-weather",
