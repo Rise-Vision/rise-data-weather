@@ -29,7 +29,7 @@
         let result = tinbu.parseTinbu(currentExtendedXML);
         assert.isObject(result);
         assert.isObject(result.observation);
-        assert.equal(result.observation.temperature, "44.60" );
+        assert.equal(result.observation.temperature, "41.00" );
         assert.equal(result.observation.temperature_scale,"F");
         assert.isObject(result.location);
         assert.equal(result.location.city_name, "Toronto" );
@@ -62,9 +62,8 @@
         assert.throws(() => tinbu.parseTinbu("<incorrext-xml/>"), "Invalid weather report (Error: Report data is missing)");
         assert.throws(() => tinbu.parseTinbu(null), "Invalid weather report (Error: Report data is missing)");
         assert.throws(() => tinbu.parseTinbu(), "Invalid weather report (Error: Report data is missing)");
-        assert.throws(() => tinbu.parseTinbu("<report></report>"), "Invalid weather report (Error: Observation data is missing)");
+        assert.throws(() => tinbu.parseTinbu("<report><location/></report>"), "Invalid weather report (Error: Observation data is missing)");
         assert.throws(() => tinbu.parseTinbu("<report><observation/></report>"), "Invalid weather report (Error: Location data is missing)");
-        assert.throws(() => tinbu.parseTinbu("<report><location></location></report>"), "Invalid weather report (Error: Observation data is missing)");
 
         assert.throws(() => tinbu.parseTinbu(noCityError), "Invalid weather report (Error: IO: No City ID Selected)");
       });
@@ -74,21 +73,22 @@
         assert.throws(() => tinbu.parseTinbu(wrongPasscodeError), "Invalid weather report (Error: Wrong Passcode)");
       });
 
-      test( "should skip first observation as it was reported as unreliable" , () =>{
-        assert.equal(tinbu.parseTinbu(`<report metric="true">
-            <observation temperature="1"/>
-            <observation temperature="2"/>
+      test( "should find nearest observation" , () =>{
+        assert.equal(tinbu.parseTinbu(`<report metric="true" latitude="10" longitude="10">
+            <observation location="1" latitude="20" longitude="10" />
+            <observation location="2" latitude="30" longitude="10"/>
+            <observation location="3" latitude="40" longitude="10"/>
             <location></location>
           </report>`
-          ).observation.temperature,"2");
+          ).observation.location,"1");
 
-        assert.equal(tinbu.parseTinbu(`<report metric="true">
-            <observation temperature="1"/>
-            <observation temperature="2"/>
-            <observation temperature="3"/>
+          assert.equal(tinbu.parseTinbu(`<report metric="true" latitude="10" longitude="10">
+            <observation location="1" latitude="30" longitude="10" />
+            <observation location="2" latitude="20" longitude="10"/>
+            <observation location="3" latitude="40" longitude="10"/>
             <location></location>
           </report>`
-          ).observation.temperature,"2");
+          ).observation.location,"2");
       });
 
       test( "should skip 'cw_no_report_icon' observations" , () =>{
@@ -106,7 +106,7 @@
             <observation temperature="333" />
             <location></location>
           </report>`
-          ).observation.temperature,"333");
+          ).observation.temperature,"111");
 
         assert.equal(tinbu.parseTinbu(`<report metric="true">
             <observation temperature="111"/>
@@ -123,7 +123,7 @@
             <observation temperature="444"/>
             <location></location>
           </report>`
-          ).observation.temperature,"444");
+          ).observation.temperature,"111");
       });
 
       test( "should use first 'cw_no_report_icon' observation if all are 'cw_no_report_icon'" , () =>{
