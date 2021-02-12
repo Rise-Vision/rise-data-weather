@@ -27,12 +27,11 @@ function parseTinbu( body ) {
 
       isMetric = report.getAttribute( "metric" ) === "true",
 
-      result = {
-        observation: extractObservation( xmlDoc, isMetric ),
-        location: extractLocation( xmlDoc, isMetric )
-      };
+      location = extractLocation( xmlDoc, isMetric ),
 
-    return result;
+      observation = extractObservation( xmlDoc, isMetric, location.latitude, location.longitude )
+
+    return { location, observation };
   } catch ( e ) {
     throw new Error( `Invalid weather report (${e})` );
   }
@@ -61,7 +60,7 @@ function validateData( body, xmlDoc ) {
   return report;
 }
 
-function extractObservation( xmlDoc, isMetric ) {
+function extractObservation( xmlDoc, isMetric, locationLatitude, locationLongitude ) {
 
   const nodes = xmlDoc
       .evaluate( "/report/observation",
@@ -69,16 +68,22 @@ function extractObservation( xmlDoc, isMetric ) {
     result = {};
   let nodeElement,
     observation,
-    index = 0;
+    distance,
+    minDistance = Number.MAX_SAFE_INTEGER;
 
   // Find an observation tag that has an icon_name other than 'cw_no_report_icon'
-  // Skip the first observation as it has been reported as unreliable
+  // source: https://www.geodatasource.com/developers/javascript
   while (( nodeElement = nodes.iterateNext()) !== null ) {
-    if ( index !== 0 && nodeElement.getAttribute( "icon_name" ) !== "cw_no_report_icon" ) {
-      observation = nodeElement;
-      break;
+    if ( nodeElement.getAttribute( "icon_name" ) !== "cw_no_report_icon" ) {
+
+      distance = getDistance( locationLatitude, locationLongitude,
+        nodeElement.getAttribute( "latitude" ), nodeElement.getAttribute( "longitude" ));
+
+      if ( minDistance > distance ) {
+        minDistance = distance;
+        observation = nodeElement;
+      }
     }
-    index++;
   }
 
   // Use first observation if can't find a better one
@@ -98,6 +103,29 @@ function extractObservation( xmlDoc, isMetric ) {
   result.temperature_scale = isMetric ? "C" : "F";
 
   return result;
+}
+
+//distane is calculated in statute miles (1 mile = 1.609344 km)
+function getDistance( lat1, lon1, lat2, lon2 ) {
+  if (( lat1 == lat2 ) && ( lon1 == lon2 )) {
+    return 0;
+  } else {
+    const radlat1 = Math.PI * lat1 / 180,
+      radlat2 = Math.PI * lat2 / 180,
+      theta = lon1 - lon2,
+      radtheta = Math.PI * theta / 180;
+    let dist = Math.sin( radlat1 ) * Math.sin( radlat2 ) + Math.cos( radlat1 ) * Math.cos( radlat2 ) * Math.cos( radtheta );
+
+    if ( dist > 1 ) {
+      dist = 1;
+    }
+
+    dist = Math.acos( dist );
+    dist = dist * 180 / Math.PI;
+    dist = dist * 60 * 1.1515;
+
+    return dist;
+  }
 }
 
 function extractLocation( xmlDoc, isMetric ) {
