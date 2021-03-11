@@ -14,7 +14,9 @@
 
   <script type="text/javascript">
     RisePlayerConfiguration = {
-      isConfigured: () => false,
+      Helpers: {
+        getComponentAsync: () => {}
+      },
       DisplayData: {
         onDisplayData: callback => {
           callback({
@@ -200,39 +202,30 @@
       let stub;
 
       setup(()=>{
-        stub = sandbox.stub( window, "addEventListener" );
+        stub = sandbox.stub(element, "addEventListener");
+        sandbox.spy(element, '_sendEvent');
+        sandbox.stub(RisePlayerConfiguration.Helpers, "getComponentAsync");
       });
 
-      test( "should listen for rise-components-ready and call init", () => {
-        element.ready();
-        assert.isTrue( stub.calledWith('rise-components-ready') );
-      });
+      test("should call _init and register handlers", () => {
+        sandbox.spy(element, '_init');
 
-      test( "should call _init() if  RisePlayerConfiguration is configured", () => {
-        sandbox.stub( element, '_init');
-
-        RisePlayerConfiguration.isConfigured = () => true ;
         element.ready();
 
-        assert.isTrue( element._init.calledOnce );
-        assert.isFalse( stub.calledOnce );
-      });
-    });
+        assert.isTrue(element._init.calledOnce);
 
-    suite( "init", () => {
-      test( "should listen for start' event", () => {
-        sandbox.stub(element, "addEventListener");
-
-        element._init();
-        assert.isTrue(element.addEventListener.calledWith( "start" ));
+        assert.isTrue(stub.calledWith('start'));
+        assert.isTrue(stub.calledWith('rise-presentation-play'));
+        assert.isTrue(stub.calledWith('rise-presentation-stop'));
       });
 
-      test( "should raise 'configured' event", () => {
-        sandbox.stub(element, "dispatchEvent");
+      test("should initialize promise and send configured", () => {
+        element.ready();
 
-        element._init();
-        assert.equal(element.dispatchEvent.getCall(0).args[0].type, "configured");
+        assert.isTrue(RisePlayerConfiguration.Helpers.getComponentAsync.calledWith(element));
+        assert.isTrue(element._sendEvent.calledWith("configured"));
       });
+
     });
 
     suite( "'start' event", () => {
