@@ -193,7 +193,7 @@ class RiseDataWeather extends FetchMixin( fetchBase ) {
     return url;
   }
 
-  _processWeatherData( content ) {
+  _processWeatherData( resp, content ) {
     var data;
 
     try {
@@ -203,7 +203,7 @@ class RiseDataWeather extends FetchMixin( fetchBase ) {
 
       this._sendWeatherEvent( RiseDataWeather.EVENT_DATA_UPDATE, this.weatherData );
     } catch ( e ) {
-      super.log( RiseDataWeather.LOG_TYPE_ERROR, "data error", { errorCode: "E000000045" }, { error: e.message, content: content });
+      super.log( RiseDataWeather.LOG_TYPE_ERROR, "data error", { errorCode: "E000000045" }, { error: e.message, content: content, url: resp.url, isCached: resp.isCached, isOffline: resp.isOffline });
 
       this._sendWeatherEvent( RiseDataWeather.EVENT_DATA_ERROR, e );
     }
@@ -236,7 +236,7 @@ class RiseDataWeather extends FetchMixin( fetchBase ) {
       resp.text().then( this._processSearchData.bind( this ));
 
     } else {
-      resp.text().then( this._processWeatherData.bind( this ));
+      resp.text().then( this._processWeatherData.bind( this, resp ));
     }
   }
 
