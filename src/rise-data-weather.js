@@ -235,7 +235,7 @@ class RiseDataWeather extends FetchMixin( fetchBase ) {
     if ( resp.url.includes( "&product=search" )) {
       resp.text().then( this._processSearchData.bind( this ));
 
-    } else {
+    } else if ( resp.url.includes( "&product=current_extended" )) {
       resp.text().then( this._processWeatherData.bind( this, resp ));
     }
   }
