@@ -232,10 +232,12 @@ class RiseDataWeather extends FetchMixin( fetchBase ) {
 
   _handleResponse( resp ) {
 
-    if ( resp.url.includes( "&product=search" )) {
+    const respUrl = this._getResponseUrl( resp );
+
+    if ( respUrl.includes( "&product=search" )) {
       resp.text().then( this._processSearchData.bind( this ));
 
-    } else if ( resp.url.includes( "&product=current_extended" )) {
+    } else if ( respUrl.includes( "&product=current_extended" )) {
       resp.text().then( this._processWeatherData.bind( this, resp ));
     }
   }
@@ -257,6 +259,11 @@ class RiseDataWeather extends FetchMixin( fetchBase ) {
       break;
     default:
     }
+  }
+
+  //helper funtion for unit testing
+  _getResponseUrl( resp ) {
+    return resp.url;
   }
 
 }
