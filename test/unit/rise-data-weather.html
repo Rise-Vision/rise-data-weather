@@ -463,7 +463,7 @@
         fetchMixin._getData().then(() => {
           assert.isTrue( cacheMixin.getCache.called );
           assert.isTrue( element._processWeatherData.called );
-          assert.isTrue( element._processWeatherData.calledWith("text") );          
+          assert.equal( element._processWeatherData.getCall(0).args[1], "text" );          
 
           assert.isFalse( fetchMixin._requestData.called );
 
@@ -549,7 +549,7 @@
         
         setTimeout(() => {
           assert.isTrue( element._processWeatherData.called );
-          assert.isTrue( element._processWeatherData.calledWith( validXmlData ) );          
+          assert.equal( element._processWeatherData.getCall(0).args[1], validXmlData );          
 
           done();
         }, 10);
@@ -784,7 +784,7 @@
 
           assert.isTrue( loggerMixin.log.calledTwice );
           assert.deepEqual( loggerMixin.log.getCall(0).args, ["info", "data received", null, {cached: false}] );
-          assert.deepEqual( loggerMixin.log.getCall(1).args, ["error", "data error", {errorCode: "E000000045"}, {error: "Invalid weather report (Error: Report data is missing)", content: "<invalid/>"}] );
+          assert.deepEqual( loggerMixin.log.getCall(1).args, ["error", "data error", {errorCode: "E000000045"}, {error: "Invalid weather report (Error: Report data is missing)", content: "<invalid/>", url: "", isCached: undefined, isOffline: undefined}] );
       
           done();
         });
