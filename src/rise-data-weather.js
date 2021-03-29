@@ -209,11 +209,11 @@ class RiseDataWeather extends FetchMixin( fetchBase ) {
     }
   }
 
-  _processSearchData( content ) {
+  _processSearchData( resp, content ) {
     try {
       this.locationId = parseTinbuSearch( content, this.displayAddress );
     } catch ( e ) {
-      super.log( RiseDataWeather.LOG_TYPE_ERROR, "search error", { errorCode: "E000000046" }, { error: e.message, content: content });
+      super.log( RiseDataWeather.LOG_TYPE_ERROR, "search error", { errorCode: "E000000046" }, { error: e.message, content: content, url: resp.url, isCached: resp.isCached, isOffline: resp.isOffline });
     }
 
     //initiate weather request regardless of the Search results
@@ -235,7 +235,7 @@ class RiseDataWeather extends FetchMixin( fetchBase ) {
     const respUrl = this._getResponseUrl( resp );
 
     if ( respUrl.includes( "&product=search" )) {
-      resp.text().then( this._processSearchData.bind( this ));
+      resp.text().then( this._processSearchData.bind( this, resp ));
 
     } else if ( respUrl.includes( "&product=current_extended" )) {
       resp.text().then( this._processWeatherData.bind( this, resp ));

@@ -438,7 +438,7 @@
         fetchMixin._getData().then(() => {
           assert.isTrue( cacheMixin.getCache.called );
           assert.isTrue( element._processSearchData.called );
-          assert.isTrue( element._processSearchData.calledWith("text") );          
+          assert.equal( element._processSearchData.getCall(0).args[1], "text" );
 
           assert.isFalse( fetchMixin._requestData.called );
 
@@ -496,7 +496,7 @@
         element.locationId = undefined;
         element.scale = "C";
 
-        element._processSearchData();
+        element._processSearchData({});
 
         assert.isTrue( fetchMixin.fetch.called );
         assert.isTrue(fetchMixin.fetch.getCall(0).args[0].includes("&product=current_extended"));
@@ -509,7 +509,7 @@
         element.locationId = "g123";
         element.scale = "F";
 
-        element._processSearchData();
+        element._processSearchData({});
 
         assert.isTrue( fetchMixin.fetch.called );
         assert.isTrue(fetchMixin.fetch.getCall(0).args[0].includes("&product=current_extended"));
