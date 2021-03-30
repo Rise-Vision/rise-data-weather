@@ -438,7 +438,7 @@
         fetchMixin._getData().then(() => {
           assert.isTrue( cacheMixin.getCache.called );
           assert.isTrue( element._processSearchData.called );
-          assert.isTrue( element._processSearchData.calledWith("text") );          
+          assert.equal( element._processSearchData.getCall(0).args[1], "text" );
 
           assert.isFalse( fetchMixin._requestData.called );
 
@@ -450,7 +450,7 @@
         sandbox.stub(cacheMixin, "getCache").resolves({
           clone: () => {
             return {
-              url: "",
+              url: "...&product=current_extended...",
               text: () => {
                 return Promise.resolve("text");
               }
@@ -496,7 +496,7 @@
         element.locationId = undefined;
         element.scale = "C";
 
-        element._processSearchData();
+        element._processSearchData({});
 
         assert.isTrue( fetchMixin.fetch.called );
         assert.isTrue(fetchMixin.fetch.getCall(0).args[0].includes("&product=current_extended"));
@@ -509,7 +509,7 @@
         element.locationId = "g123";
         element.scale = "F";
 
-        element._processSearchData();
+        element._processSearchData({});
 
         assert.isTrue( fetchMixin.fetch.called );
         assert.isTrue(fetchMixin.fetch.getCall(0).args[0].includes("&product=current_extended"));
@@ -543,6 +543,7 @@
         sandbox.stub(cacheMixin, "putCache").resolves();
         window.fetch.resolves(response);
 
+        sandbox.stub(element, "_getResponseUrl").returns("...&product=current_extended...");
         sandbox.stub(element, "_processWeatherData");
       
         fetchMixin._requestData();
@@ -702,6 +703,7 @@
       test( "should make a request and send data-update", done => {
         sandbox.stub(cacheMixin, "getCache").rejects();
         sandbox.stub(cacheMixin, "putCache").resolves();
+        sandbox.stub(element, "_getResponseUrl").returns("...&product=current_extended...");
         window.fetch.resolves(response);
 
         element.addEventListener("data-update", () => {
@@ -716,6 +718,7 @@
       test( "should log data received only once for not cached requests", done => {
         sandbox.stub(cacheMixin, "getCache").rejects();
         sandbox.stub(cacheMixin, "putCache").resolves();
+        sandbox.stub(element, "_getResponseUrl").returns("...&product=current_extended...");
         window.fetch.resolves(response);
         fetchMixin._logDataReceived = true;
 
@@ -756,6 +759,7 @@
       test( "should enqueue next request for 30 minutes", done => {
         sandbox.stub(cacheMixin, "getCache").rejects();
         sandbox.stub(cacheMixin, "putCache").resolves();
+        sandbox.stub(element, "_getResponseUrl").returns("...&product=current_extended...");
         sandbox.stub(fetchMixin, "_refresh");
 
         window.fetch.resolves(response);
@@ -774,7 +778,8 @@
 
       test( "should raise 'data-error' on invalid data", done => {
         window.fetch.resolves(new Response("<invalid/>",{headers:{date: new Date()}}));
-      
+        sandbox.stub(element, "_getResponseUrl").returns("...&product=current_extended...");
+
         const cache = { match: sandbox.stub().resolves(null), put: sandbox.stub() };
         sandbox.stub(caches, "open").resolves(cache);      
         fetchMixin._logDataReceived = true;
@@ -794,6 +799,7 @@
 
       test( "should enqueue next refresh on invalid data", done => {
         window.fetch.resolves(new Response("<invalid/>",{headers:{date: new Date()}}));
+        sandbox.stub(element, "_getResponseUrl").returns("...&product=current_extended...");
         sandbox.stub(fetchMixin, "_refresh");
       
         const cache = { match: sandbox.stub().resolves(null) };
