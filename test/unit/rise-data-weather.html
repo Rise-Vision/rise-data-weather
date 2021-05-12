@@ -422,52 +422,44 @@
 
     suite( "_getData", () => {
       test( "should get the result from cache - search response", done => {
-        sandbox.stub(cacheMixin, "getCache").resolves({
-          clone: () => {
-            return {
-              url: "...&product=search...",
-              text: () => {
-                return Promise.resolve("text");
-              }
-            };
-          }
-        });
+        const resp = new Response("text");
+        Object.defineProperty( resp, "url", { value: "...&product=search..." });
+        sandbox.stub(cacheMixin, "getCache").resolves( resp );
         sandbox.stub(element, "_processSearchData");
         sandbox.stub(fetchMixin, "_requestData");
 
         fetchMixin._getData().then(() => {
           assert.isTrue( cacheMixin.getCache.called );
-          assert.isTrue( element._processSearchData.called );
-          assert.equal( element._processSearchData.getCall(0).args[1], "text" );
-
           assert.isFalse( fetchMixin._requestData.called );
+          
+          // wait for resp.text() in _handleResponse to resolve
+          setTimeout( () => {
+            assert.isTrue( element._processSearchData.called );
+            assert.equal( element._processSearchData.getCall(0).args[1], "text" );
 
-          done();
+            done();
+          }, 10)
         });
       });
 
       test( "should get the result from cache - weather response", done => {
-        sandbox.stub(cacheMixin, "getCache").resolves({
-          clone: () => {
-            return {
-              url: "...&product=current_extended...",
-              text: () => {
-                return Promise.resolve("text");
-              }
-            };
-          }
-        });
+        const resp = new Response("text");
+        Object.defineProperty( resp, "url", { value: "...&product=current_extended..." });
+        sandbox.stub(cacheMixin, "getCache").resolves( resp );
         sandbox.stub(element, "_processWeatherData");
         sandbox.stub(fetchMixin, "_requestData");
 
         fetchMixin._getData().then(() => {
           assert.isTrue( cacheMixin.getCache.called );
-          assert.isTrue( element._processWeatherData.called );
-          assert.equal( element._processWeatherData.getCall(0).args[1], "text" );          
-
           assert.isFalse( fetchMixin._requestData.called );
 
-          done();
+          // wait for resp.text() in _handleResponse to resolve
+          setTimeout( () => {
+            assert.isTrue( element._processWeatherData.called );
+            assert.equal( element._processWeatherData.getCall(0).args[1], "text" );          
+
+            done();
+          }, 10)
         });
       });
 
